@@ -1,0 +1,7 @@
+.div-background
+{
+
+  background: url('../public/assets/bg_login_signup/login.png');
+  background-repeat: no-repeat;
+  background-size: cover;
+}
