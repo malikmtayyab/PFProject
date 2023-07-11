@@ -9,8 +9,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use App\Models\UnverifiedUser;
 
-
-
 use Hash;
 
 
@@ -37,34 +35,25 @@ class AuthController extends Controller
 
     if (! $token = auth()->attempt($credentials)) {
         return response()->json(['error' => 'Unauthorized token not generated'], 401);
-       
+
 
     }
     return $this->respondWithToken($token);
 }
 
-    
+
     public function register(Request $request)
     {
         $user = new User;
 
-        
+
         $user->id = Str::uuid()->toString();
         $credentials = $request->only('name', 'email', 'password', 'usertype');
         $credentials['password'] = Hash::make($credentials['password']);
         $user->fill($credentials);
         $user->save();
-        
+
         return response()->json('successful');
-        
-        
-        
-        
-        
-        
-        
-        
-      
     }
 
     /**
