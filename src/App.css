@@ -1,7 +1,24 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cabin:wght@500&display=swap');
 .div-background
 {
 
   background: url('../public/assets/bg_login_signup/login.png');
   background-repeat: no-repeat;
   background-size: cover;
+}
+
+.main-login-font
+{
+  font-family: 'Poppins', sans-serif;
+}
+
+.form-fonts
+{
+  font-family: 'Cabin', sans-serif;
+}
+
+.upload-bg
+{
+  background-image: url('../public/assets/upload_image/upload.png');
 }
