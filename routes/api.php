@@ -5,6 +5,12 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\VerificationController;
 use App\Http\Controllers\Work_Space_Controller;
+use App\Http\Controllers\InvitationTableController;
+use App\Http\Controllers\WorkspaceAdminsController;
+use App\Http\Controllers\ProjectSpaceController;
+
+
+
 
 
 /*
@@ -31,6 +37,12 @@ Route::post('check_authorization', [AuthController::class, 'authorizeJWT_Session
 //work_space route
 
 Route::post('/createworkspace', [Work_Space_Controller::class, 'store']);
+Route::post('/inviteby', [InvitationTableController::class, 'store']);
+
+Route::post('/workspaceadmin', [WorkspaceAdminsController::class, 'store']);
+
+//ProjectSpaceController
+Route::post('/projectspace', [ProjectSpaceController::class, 'store']);
 
 
 

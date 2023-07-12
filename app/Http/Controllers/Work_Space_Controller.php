@@ -7,15 +7,30 @@ use App\Models\work_space;
 use Illuminate\Support\Str;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 
 
 class Work_Space_Controller extends Controller
 {
     public function store(Request $request)
     {
+        $validator = Validator::make($request->all(), [
+            'image' => 'required|image',
+            'workspace_name' => 'required',
+            'created_by' => 'required',
+        ]);
+    
+        // Check if validation fails
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'failed',
+                'message' => $validator->errors(),
+            ], 400);
+        }
+    
         try {
             $work_space = new Work_Space;
-        
+    
             if ($request->hasFile('image')) {
                 $file = $request->file('image');
                 $filename = $file->getClientOriginalName();
@@ -31,20 +46,34 @@ class Work_Space_Controller extends Controller
             $work_space->save();
         
             return response()->json([
-                'status' => 200,
-                'message' => "Added successfully",
+                'status' => 'success',
+                'message' => 'Added successfully',
             ]);
         } catch (QueryException $e) {
             return response()->json([
-                'status' => 500,
-                'message' => "Error occurred while saving the workspace",
+                'status' => 'failed',
+                'message' => 'Error occurred while saving the workspace',
             ]);
         } catch (\Exception $e) {
             return response()->json([
-                'status' => 500,
-                'message' => "An unexpected error occurred",
+                'status' => 'failed',
+                'message' => 'An unexpected error occurred',
             ]);
         }
     }
+    public function show()
+    {
+        // $user = new User;
 
+
+        $items= Work_Space::get();
+        return response()->json([
+            'items' => $items,
+        ]);
+
+        // $items= installment::get();
+        // return response()->json([
+        //     'items' => $items,
+        // ]);
+    }
 }
