@@ -5,6 +5,12 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\VerificationController;
 use App\Http\Controllers\Work_Space_Controller;
+use App\Http\Controllers\InvitationTableController;
+use App\Http\Controllers\WorkspaceAdminsController;
+use App\Http\Controllers\ProjectSpaceController;
+
+
+
 
 
 /*
@@ -25,10 +31,19 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 // Authentication Routes
 Route::post('login', [AuthController::class, 'login']);
 Route::post('register', [AuthController::class, 'register']);
+ Route::get('getuser', [AuthController::class, 'show']);
+// Route::get('login', [AuthController::class, 'login'])->name('login');
+
 
 //work_space route
 
 Route::post('/createworkspace', [Work_Space_Controller::class, 'store']);
+Route::post('/inviteby', [InvitationTableController::class, 'store']);
+
+Route::post('/workspaceadmin', [WorkspaceAdminsController::class, 'store']);
+
+//ProjectSpaceController
+Route::post('/projectspace', [ProjectSpaceController::class, 'store']);
 
 
 
