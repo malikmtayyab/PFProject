@@ -49,14 +49,14 @@ class AuthController extends Controller
             'email' => 'required|email',
             'password' => 'required',
         ]);
-    
+
         // Check if validation fails
         if ($validator->fails()) {
             return response()->json($validator->errors(), 400);
         }
-    
+
         $credentials = $request->only('email', 'password');
-    
+
         try {
             if (! $token = auth()->attempt($credentials)) {
                 return response()->json([
@@ -64,12 +64,15 @@ class AuthController extends Controller
                     'message' => 'Email not exist',
                 ]);
             }
-    
+
             $user = auth()->user();
-    
+
             // Check if user ID exists in Work_Space table
             $workspace = Work_Space::where('created_by', $user->id)->first();
-    
+            //Creating Session
+            $session = session();
+            $session->put("jwt_session", $user->getKey());
+            $session->save();
             if ($workspace) {
                 return response()->json([
                     'status' => 'success',
@@ -123,7 +126,7 @@ public function register(Request $request)
 
         // Check if the email already exists
         if ($errorCode == 1062) {
-            
+
             return response()->json([
                 'status' => 'failed',
                 'message' => "email already exist",
@@ -141,13 +144,13 @@ public function register(Request $request)
 }
 
 
-        
+
 
         // $items= installment::get();
         // return response()->json([
         //     'items' => $items,
         // ]);
-    
+
     public function show()
     {
         // $user = new User;

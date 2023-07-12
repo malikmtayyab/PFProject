@@ -15,11 +15,6 @@ class User extends Authenticatable implements JWTSubject
     protected $primaryKey = 'id';
     public $incrementing = false;
     protected $keyType = 'string';
-
-    protected $primaryKey = 'id';
-    public $incrementing = false;
-
-    protected $keyType = 'string';
     /**
      * The attributes that are mass assignable.
      *
@@ -30,7 +25,7 @@ class User extends Authenticatable implements JWTSubject
         'email',
         'password',
     ];
-    
+
     /**
      * The attributes that should be hidden for serialization.
      *
