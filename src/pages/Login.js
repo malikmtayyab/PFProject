@@ -3,6 +3,8 @@ import '../App.css'
 import Input from '../components/Input'
 import { useState,useEffect } from 'react'
 import ViewChanger from '../components/ViewChanger'
+import Swal from 'sweetalert2'
+
 
 export default function Login() {
 
@@ -17,6 +19,43 @@ export default function Login() {
           ...formData,
           [e.target.id]: e.target.value
       });
+    }
+
+    const forgetPass=()=>
+    {
+      Swal.fire({
+        title: 'Enter your email',
+        input: 'text',
+        inputAttributes: {
+          autocapitalize: 'off'
+        },
+        showCancelButton: false,
+        confirmButtonColor:'#1345B7',
+        confirmButtonText: 'Send Email',
+        showLoaderOnConfirm: true,
+        preConfirm: (login) => {
+          return fetch(`//api.github.com/users/${login}`)
+            .then(response => {
+              if (!response.ok) {
+                throw new Error(response.statusText)
+              }
+              return response.json()
+            })
+            .catch(error => {
+              Swal.showValidationMessage(
+                `Request failed: ${error}`
+              )
+            })
+        },
+        allowOutsideClick: () => !Swal.isLoading()
+      }).then((result) => {
+        if (result.isConfirmed) {
+          Swal.fire({
+            title: `${result.value.login}'s avatar`,
+            imageUrl: result.value.avatar_url
+          })
+        }
+      })
     }
 
 
@@ -41,12 +80,16 @@ export default function Login() {
   
         <Input type={"text"} id={"email"} value={formData.email} label={"Your Email"} onChange={changeHandler} />
         <Input type={"password"} id={"password"} value={formData.password} label={"Your Password"} onChange={changeHandler} />
-        <Input type={"submit"} id={""} value={formData.password} label={""} onChange={changeHandler} btnValue={'Login'} isLast/>
+        <Input type={"submit"} id={"login"} value={formData.password}  onChange={changeHandler} btnValue={'Login'} isLast={true}/>
 
        
 
      
 </form>
+<div className='text-right'>
+
+ <button className=' form-fonts text-right' onClick={forgetPass}>Forgot Password?</button>
+</div>
 
 <ViewChanger text={'Not having an account?'} Btntxt={'Sign up'} linkto={'/signup'}/>
       </div>

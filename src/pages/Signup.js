@@ -47,7 +47,7 @@ export default function Signup_page() {
         <Input type={"text"} id={"name"} value={formData.name} label={"Your Name"} onChange={changeHandler} />
         <Input type={"text"} id={"email"} value={formData.email} label={"Your Email"} onChange={changeHandler} />
         <Input type={"password"} id={"password"} value={formData.password} label={"Your Password"} onChange={changeHandler} />
-        <Input type={"submit"} id={""} value={formData.password} label={""} onChange={changeHandler} btnValue={'Sign up'} isLast/>
+        <Input type={"submit"} id={"signup"} value={formData.password} label={""} onChange={changeHandler} btnValue={'Sign up'} isLast/>
 
        
 

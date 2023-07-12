@@ -9,7 +9,7 @@ const Input = ({ label, id, type, value, onChange, isLast, disable,btnValue }) =
             <br></br>
             {
                 isLast ?
-                    <input type='submit' className='bg-blue-800 pointer-pointer border-blue-900 border-[1px] w-60 md:w-80 h-12  bg-transparent  border-white  rounded-3xl' value={btnValue} />
+                    <input type='submit' className=' cursor-pointer btn-color border-blue-700 border-[1px] w-60 md:w-80 h-12  bg-transparent  border-white  rounded-3xl' value={btnValue} />
                     :
 
                     <input className={"w-60 md:w-80 h-12  pl-3 bg-transparent border-[1px] border-white  rounded-3xl"} required id={id} type={type} value={value != '0' ? value : ''} onChange={onChange} />

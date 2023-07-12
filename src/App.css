@@ -22,3 +22,9 @@
 {
   background-image: url('../public/assets/upload_image/upload.png');
 }
+
+.btn-color
+{
+  background-color: #1345B7;
+  border: 1px solid #1345B7;
+}
