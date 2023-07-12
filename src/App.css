@@ -28,3 +28,38 @@
   background-color: #1345B7;
   border: 1px solid #1345B7;
 }
+
+.dashtxt
+{
+  color: black;
+  display: none;
+}
+.dashImg:hover + .dashtxt
+{
+ 
+ display: block;
+}
+
+.executive-background
+{
+  background-image: url('../public//assets/executive/sideImg.jpg');
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+.executive-bg
+{
+ background: white;
+ border:1px solid black;
+ box-shadow: 2px 2px 2px 2px rgb(0 0 0 / 0.2);
+}
+
+.primary-navigation {
+  margin: 0 auto;
+  display: block;
+
+  /* padding: 120px 0 0 0; */
+  text-align: center;
+  font-size: 16px;
+}
+
