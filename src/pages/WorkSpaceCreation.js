@@ -1,15 +1,20 @@
 import React from 'react'
 import '../App.css'
+import { useNavigate } from 'react-router-dom';
 import Input from '../components/Input'
 import { useState } from 'react'
+import axios from 'axios'
+import Swal from 'sweetalert2'
 
 
 export default function WorkSpaceCreation() {
 
+  const navigate = useNavigate()
+
   const [formData, setFormData] = useState({
-    workspace: '',
-    img: '',
+    workspace: ''
   })
+  const [image, setimageFile] = useState();
 
   const changeHandler = (e) => {
 
@@ -18,7 +23,73 @@ export default function WorkSpaceCreation() {
       [e.target.id]: e.target.value
     });
 
-    console.log(formData)
+  }
+
+  const imagechangeHandler = async (event) => {
+    const file = event.target.files[0]
+
+    Swal.fire({
+      icon: 'warning',
+      title: 'Profile Picture',
+      text: 'Are you sure you want to upload?',
+    })
+      .then((willUpload) => {
+        if (willUpload) {
+          setimageFile(file)
+        }
+      });
+    event.target.value = null
+  }
+
+  const createWorkSpace = async (event) => {
+    event.preventDefault()
+    if (formData.workspace === "") {
+      Swal.fire({
+        icon: 'error',
+        title: 'Oops...',
+        text: 'Fill all the fields !',
+      })
+    }
+    else if (!image) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Oops...',
+        text: 'Profile picture in mandatory!',
+      })
+    }
+    else {
+      const form = new FormData();
+      form.append('image', image);
+      form.append('workspace_name', formData.workspace)
+      try {
+        const response = await axios.post(
+          `http://127.0.0.1:8000/api/createworkspace`,
+          form
+        )
+        if (response.status === "success") {
+          Swal.fire({
+            icon: 'success',
+            title: 'Success',
+            text: 'You have created a workspace',
+          })
+          navigate('/creator/dashboard')
+        }
+        else {
+          Swal.fire({
+            icon: 'error',
+            title: 'Oops...',
+            text: 'Something is wrong !',
+          })
+        }
+      } catch (err) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Oops...',
+          text: `${err}`,
+        })
+      }
+
+    }
   }
 
   return (
@@ -29,25 +100,25 @@ export default function WorkSpaceCreation() {
 
       <div className='space-y-8 md:mr-14 backdrop-blur-sm py-4 md:px-10 px-10 border-[1px] shadow-md rounded-xl pb-10' >
 
-<form>
+        <form onSubmit={createWorkSpace}>
 
-        <h1 className='text-[24px] md:text-[35px] form-fonts text-center font-light' >Details</h1>
+          <h1 className='text-[24px] md:text-[35px] form-fonts text-center font-light' >Details</h1>
 
-        <div className='flex justify-center'>
+          <div className='flex justify-center'>
 
-          <div className='bg-white rounded-full w-20 p-4'>
-            <label for='img'>
+            <div className='bg-white rounded-full w-20 p-4'>
+              <label for='img'>
 
-              <img className='cursor-pointer' src={process.env.PUBLIC_URL + '/assets/upload_image/upload.png'} alt='...' />
-            </label>
-            <input id='img' type='file' className='upload-bg hidden' value={formData.img} onChange={changeHandler} accept='image/*' />
+                <img className='cursor-pointer' src={process.env.PUBLIC_URL + '/assets/upload_image/upload.png'} alt='...' />
+              </label>
+              <input id='img' type='file' className='upload-bg hidden' name='image' onChange={imagechangeHandler} accept='image/*' />
+            </div>
           </div>
-        </div>
 
-        <Input type={"text"} id={"workspace"} value={formData.workspace} label={"Work Space Name"} onChange={changeHandler} />
-        <Input type={"submit"} id={"create"} value={formData.password} label={""} onChange={changeHandler} btnValue={'Create'} isLast/>
-</form>
-        
+          <Input type={"text"} id={"workspace"} value={formData.workspace} label={"Work Space Name"} onChange={changeHandler} />
+          <Input type={"submit"} id={"create"} value={formData.password} label={""} onChange={changeHandler} btnValue={'Create'} isLast />
+        </form>
+
 
 
       </div>
