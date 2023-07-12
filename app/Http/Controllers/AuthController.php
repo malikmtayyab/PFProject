@@ -14,10 +14,20 @@ use App\Models\work_space;
 
 
 use Hash;
+use Tymon\JWTAuth\JWTGuard;
+use Tymon\JWTAuth\Token as JWTToken;
+use Tymon\JWTAuth\Payload;
+use Tymon\JWTAuth\Facades\JWT;
+use Tymon\JWTAuth\Facades\JWTAuth;
+
+
+
 
 
 class AuthController extends Controller
 {
+
+    // public $globalVariable;
     /**
      * Create a new AuthController instance.
      *
@@ -100,7 +110,7 @@ public function register(Request $request)
     try {
         $user = new User;
         $user->id = Str::uuid()->toString();
-        $credentials = $request->only('name', 'email', 'password', 'usertype');
+        $credentials = $request->only('name', 'email', 'password');
         $credentials['password'] = Hash::make($credentials['password']);
         $user->fill($credentials);
         $user->save();
@@ -196,10 +206,50 @@ public function register(Request $request)
     protected function respondWithToken($token)
     {
         return response()->json([
-            'access_token' => $token,
+            'access_token'=>$token,
             'token_type' => 'bearer',
             'expires_in' => auth()->factory()->getTTL() * 60,
-            'user'=>auth()->user()
+            'user' => auth()->user(),
+            'sessionKey'=> Session::get("jwt_session"),
         ]);
     }
+
+    /*
+        To access the below method first remove the middleware present in constructor of
+        this class.
+    */
+
+  /**
+ * This function gets the session ID from the JWT token.
+ *
+ * @param Request $request The request object.
+ *
+ * @return array An array with the session ID and the session from the session store.
+ */
+function authorizeJWT_Session(Request $request)
+{
+    // Get the token from the request.
+    $token = $request->input('token');
+
+    // Remove the "Bearer " prefix from the token.
+    $token = str_replace('Bearer ', '', $token);
+
+    // Get the secret key from the .env file.
+    $secret = env('JWT_SECRET');
+
+    // Decode the token using the secret key.
+    $decodedToken = JWTAuth::parseToken($token, $secret);
+
+    // Get the session ID from the token payload.
+    $sessionID = $decodedToken->getPayload()->get('sub');
+
+    // Get the session from the session store.
+    $session = session();
+
+    // Return an array with the session ID and the session from the session store.
+    return [
+        'sessionIDFromToken' => $sessionID,
+        'sessionFromSomething' => $session->get('jwt_session'),
+    ];
+}
 }

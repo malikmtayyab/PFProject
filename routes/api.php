@@ -31,8 +31,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 // Authentication Routes
 Route::post('login', [AuthController::class, 'login']);
 Route::post('register', [AuthController::class, 'register']);
- Route::get('getuser', [AuthController::class, 'show']);
-// Route::get('login', [AuthController::class, 'login'])->name('login');
+Route::post('check_authorization', [AuthController::class, 'authorizeJWT_Session']);
 
 
 //work_space route

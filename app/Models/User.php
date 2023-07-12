@@ -16,6 +16,10 @@ class User extends Authenticatable implements JWTSubject
     public $incrementing = false;
     protected $keyType = 'string';
 
+    protected $primaryKey = 'id';
+    public $incrementing = false;
+
+    protected $keyType = 'string';
     /**
      * The attributes that are mass assignable.
      *
@@ -45,6 +49,20 @@ class User extends Authenticatable implements JWTSubject
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
+     // ...
+
+    /**
+     * Convert the model's attributes to an array.
+     *
+     * @return array
+     */
+    public function toArray()
+    {
+        $attributes = $this->attributesToArray();
+        $attributes['id'] = (string) $this->id;
+
+        return $attributes;
+    }
 
     public function getJWTIdentifier()
     {
