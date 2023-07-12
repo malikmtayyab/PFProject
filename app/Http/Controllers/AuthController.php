@@ -141,7 +141,7 @@ class AuthController extends Controller
 
     /*
         To access the below method first remove the middleware present in constructor of
-        this class.
+        this class. This code will be used throughout different APIs.
     */
 
   /**
