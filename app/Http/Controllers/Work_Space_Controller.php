@@ -24,8 +24,8 @@ class Work_Space_Controller extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'status' => 'failed',
-                'message' => $validator->errors(),
-            ], 400);
+                'message' => 'Fill all the fields',
+            ]);
         }
     
         try {

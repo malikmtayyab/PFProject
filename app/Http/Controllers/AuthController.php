@@ -52,13 +52,16 @@ class AuthController extends Controller
 
         // Check if validation fails
         if ($validator->fails()) {
-            return response()->json($validator->errors(), 400);
+            return response()->json([
+                'status' => 'failed',
+                'message' => 'Fill all the fields',
+            ]);
         }
 
         $credentials = $request->only('email', 'password');
 
         try {
-            if (! $token = auth()->attempt($credentials)) {
+            if (!$token = auth()->attempt($credentials)) {
                 return response()->json([
                     'status' => 'failed',
                     'message' => 'Email not exist',
@@ -96,67 +99,60 @@ class AuthController extends Controller
         }
     }
 
-public function register(Request $request)
-{
-    // Validate the request data
-    $validator = Validator::make($request->all(), [
-        'name' => 'required',
-        'email' => 'required|email|unique:users',
-        'password' => 'required',
-    ]);
+    public function register(Request $request)
+    {
+        // Validate the request data
+        $validator = Validator::make($request->all(), [
+            'name' => 'required',
+            'email' => 'required',
+            'password' => 'required',
+        ]);
 
-    // Check if validation fails
-    if ($validator->fails()) {
-        return response()->json($validator->errors(), 400);
-    }
-
-    try {
-        $user = new User;
-        $user->id = Str::uuid()->toString();
-        $credentials = $request->only('name', 'email', 'password');
-        $credentials['password'] = Hash::make($credentials['password']);
-        $user->fill($credentials);
-        $user->save();
-
-        return response()->json([
-            'status' => 'success',
-            'message' => "Accout created",
-        ]);    } catch (\Illuminate\Database\QueryException $e) {
-        $errorCode = $e->errorInfo[1];
-
-        // Check if the email already exists
-        if ($errorCode == 1062) {
-
+        // Check if validation fails
+        if ($validator->fails()) {
             return response()->json([
                 'status' => 'failed',
-                'message' => "email already exist",
+                'message' => "Fill all the field",
             ]);
         }
 
-        // Handle other exceptions if needed
+        try {
+            $user = new User;
+            $user->id = Str::uuid()->toString();
+            $credentials = $request->only('name', 'email', 'password');
+            $credentials['password'] = Hash::make($credentials['password']);
+            $user->fill($credentials);
+            $user->save();
 
-        // Default error response
-        return response()->json([
-            'status' => 'failed',
-            'message' => "an error occur due to some issue",
-        ]);
+            return response()->json([
+                'status' => 'success',
+                'message' => "Accout created",
+            ]);
+        } catch (\Illuminate\Database\QueryException $e) {
+
+            // Default error response
+            return response()->json([
+                'status' => 'failed',
+                'message' => 'Email already exist',
+            ]);
+        }
+
     }
-}
 
 
 
 
-        // $items= installment::get();
-        // return response()->json([
-        //     'items' => $items,
-        // ]);
+    // $items= installment::get();
+    // return response()->json([
+    //     'items' => $items,
+    // ]);
 
     public function show()
     {
         // $user = new User;
 
 
-        $items= User::find("f2e3c6ad-fa17-4bd5-a22f-d336af400b72");
+        $items = User::find("f2e3c6ad-fa17-4bd5-a22f-d336af400b72");
         return response()->json([
             'items' => $items,
         ]);
@@ -186,7 +182,10 @@ public function register(Request $request)
     {
         auth()->logout();
 
-        return response()->json(['message' => 'Successfully logged out']);
+        return response()->json([
+            'status' => 'success',
+            'message' => "Successfully logged out",
+        ]);
     }
 
     /**
@@ -209,11 +208,11 @@ public function register(Request $request)
     protected function respondWithToken($token)
     {
         return response()->json([
-            'access_token'=>$token,
+            'access_token' => $token,
             'token_type' => 'bearer',
             'expires_in' => auth()->factory()->getTTL() * 60,
             'user' => auth()->user(),
-            'sessionKey'=> Session::get("jwt_session"),
+            'sessionKey' => Session::get("jwt_session"),
         ]);
     }
 
@@ -222,37 +221,37 @@ public function register(Request $request)
         this class. This code will be used throughout different APIs.
     */
 
-  /**
- * This function gets the session ID from the JWT token.
- *
- * @param Request $request The request object.
- *
- * @return array An array with the session ID and the session from the session store.
- */
-function authorizeJWT_Session(Request $request)
-{
-    // Get the token from the request.
-    $token = $request->input('token');
+    /**
+     * This function gets the session ID from the JWT token.
+     *
+     * @param Request $request The request object.
+     *
+     * @return array An array with the session ID and the session from the session store.
+     */
+    function authorizeJWT_Session(Request $request)
+    {
+        // Get the token from the request.
+        $token = $request->input('token');
 
-    // Remove the "Bearer " prefix from the token.
-    $token = str_replace('Bearer ', '', $token);
+        // Remove the "Bearer " prefix from the token.
+        $token = str_replace('Bearer ', '', $token);
 
-    // Get the secret key from the .env file.
-    $secret = env('JWT_SECRET');
+        // Get the secret key from the .env file.
+        $secret = env('JWT_SECRET');
 
-    // Decode the token using the secret key.
-    $decodedToken = JWTAuth::parseToken($token, $secret);
+        // Decode the token using the secret key.
+        $decodedToken = JWTAuth::parseToken($token, $secret);
 
-    // Get the session ID from the token payload.
-    $sessionID = $decodedToken->getPayload()->get('sub');
+        // Get the session ID from the token payload.
+        $sessionID = $decodedToken->getPayload()->get('sub');
 
-    // Get the session from the session store.
-    $session = session();
+        // Get the session from the session store.
+        $session = session();
 
-    // Return an array with the session ID and the session from the session store.
-    return [
-        'sessionIDFromToken' => $sessionID,
-        'sessionFromSomething' => $session->get('jwt_session'),
-    ];
-}
+        // Return an array with the session ID and the session from the session store.
+        return [
+            'sessionIDFromToken' => $sessionID,
+            'sessionFromSomething' => $session->get('jwt_session'),
+        ];
+    }
 }
