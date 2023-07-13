@@ -42,8 +42,9 @@ export default function Login() {
             `http://127.0.0.1:8000/api/login`,
             formData
           )
-          if (response.status === "success") {
-            if (response.workspace === "true") {
+          if (response.data.status === "success") {
+            localStorage.setItem('token', response.data.token);
+            if (response.data.workspace === "true") {
               navigate('/creator/dashboard')
             }
             else {
@@ -54,7 +55,7 @@ export default function Login() {
             Swal.fire({
               icon: 'error',
               title: 'Oops...',
-              text: 'Something is wrong !',
+              text: `${response.data.message}`,
             })
           }
         } catch (err) {

@@ -1,7 +1,7 @@
 
 import '../App.css'
 
-const Input = ({ label, id, type, value, onChange, isLast, disable,btnValue }) => {
+const Input = ({ label, id, type, value, onChange, isLast, disable,btnValue,name }) => {
     return (
         <div className="text-center md:text-start">
 
@@ -12,7 +12,7 @@ const Input = ({ label, id, type, value, onChange, isLast, disable,btnValue }) =
                     <input type='submit' className=' cursor-pointer btn-color border-blue-700 border-[1px] w-60 md:w-80 h-12  bg-transparent  border-white  rounded-3xl' value={btnValue} />
                     :
 
-                    <input className={"w-60 md:w-80 h-12  pl-3 bg-transparent border-[1px] border-white  rounded-3xl"} required id={id} type={type} value={value != '0' ? value : ''} onChange={onChange} />
+                    <input className={"w-60 md:w-80 h-12  pl-3 bg-transparent border-[1px] border-white  rounded-3xl"}  id={id} type={type} value={value != '0' ? value : ''} name={name} onChange={onChange} />
             }
 
         </div>

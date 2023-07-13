@@ -5,12 +5,12 @@ import Input from '../components/Input'
 import { useState } from 'react'
 import axios from 'axios'
 import Swal from 'sweetalert2'
-
-
+import AuthUser from './AuthUser';
 export default function WorkSpaceCreation() {
 
   const navigate = useNavigate()
-
+  const token = localStorage.getItem('token');
+  const { user } = AuthUser();
   const [formData, setFormData] = useState({
     workspace: ''
   })
@@ -61,16 +61,17 @@ export default function WorkSpaceCreation() {
       const form = new FormData();
       form.append('image', image);
       form.append('workspace_name', formData.workspace)
+      form.append('access_token', token)
       try {
         const response = await axios.post(
           `http://127.0.0.1:8000/api/createworkspace`,
           form
         )
-        if (response.status === "success") {
+        if (response.data.status === "success") {
           Swal.fire({
             icon: 'success',
             title: 'Success',
-            text: 'You have created a workspace',
+            text: `${response.data.message}`,
           })
           navigate('/creator/dashboard')
         }
@@ -78,7 +79,7 @@ export default function WorkSpaceCreation() {
           Swal.fire({
             icon: 'error',
             title: 'Oops...',
-            text: 'Something is wrong !',
+            text: `${response.data.message}`,
           })
         }
       } catch (err) {

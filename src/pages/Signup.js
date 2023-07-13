@@ -47,14 +47,14 @@ export default function Signup_page() {
     else {
       if (validator.isEmail(formData.email)) {
         try {
-          const response = axios.post(
+          const response = await axios.post(
             'http://127.0.0.1:8000/api/register', formData
           )
-          if (response.status === "success") {
+          if (response.data.status === "success") {
             Swal.fire({
               icon: 'success',
               title: 'Success',
-              text: 'You are successfully registered',
+              text: `${response.data.message}`,
             })
             setTimeout(function () {
               navigate('/')
@@ -64,7 +64,7 @@ export default function Signup_page() {
             Swal.fire({
               icon: 'error',
               title: 'Oops...',
-              text: 'Something is wrong',
+              text: `${response.data.message}`,
             })
           }
 
@@ -96,9 +96,9 @@ export default function Signup_page() {
 
         <form className='space-y-6 ' onSubmit={registeruser}>
 
-          <Input type={"text"} id={"name"} value={formData.name} label={"Your Name"} onChange={changeHandler} />
-          <Input type={"text"} id={"email"} value={formData.email} label={"Your Email"} onChange={changeHandler} />
-          <Input type={"password"} id={"password"} value={formData.password} label={"Your Password"} onChange={changeHandler} />
+          <Input type={"text"} id={"name"} value={formData.name} label={"Your Name"} name={"name"} onChange={changeHandler} />
+          <Input type={"text"} id={"email"} value={formData.email} label={"Your Email"} name={"email"} onChange={changeHandler} />
+          <Input type={"password"} id={"password"} value={formData.password} name={"password"} label={"Your Password"} onChange={changeHandler} />
           <Input type={"submit"} id={"signup"} value={formData.password} label={""} onChange={changeHandler} btnValue={'Sign up'} isLast />
 
 
