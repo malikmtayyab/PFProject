@@ -138,7 +138,7 @@ public function register(Request $request)
         // Default error response
         return response()->json([
             'status' => 'failed',
-            'message' => "an error occur due to some issue",
+            'message' => "email already exist",
         ]);
     }
 }
