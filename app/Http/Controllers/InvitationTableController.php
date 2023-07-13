@@ -13,8 +13,9 @@ use Illuminate\Support\Facades\Mail;
 use App\Mail\InvitationEmail;
 use Illuminate\Support\Facades\Hash;
 use App\Mail\ExistingUserEmail;
-use App\Http\Controllers\Access_Toekn_Extractor;
 use App\Http\Controllers\EmailSender;
+
+use App\Http\Controllers\Access_Token_Extractor;
 
 
 class InvitationTableController extends Controller
@@ -102,7 +103,7 @@ class InvitationTableController extends Controller
                     $user = new User;
                     $user->id = Str::uuid()->toString();
                     $user->email = $request->input('email');
-                    $password = Str::random(8);
+                    $password=Str::random(8);
                     $user->password = Hash::make($password);
 
                     if ($user->save()) {
