@@ -1,51 +1,61 @@
-import React from "react";
+import React from 'react'
+import { useState, useEffect,useRef } from 'react'
 
-export default function Profile  () {
-    const handleMenuOne = () => {
-      console.log('clicked one');
-    };
+
+export default function Profile() {
+
+  const [toggle, setToggle] = useState(false)
   
-    const handleMenuTwo = () => {
-      console.log('clicked two');
-    };
-  
-    return (
-      <Dropdown
-        trigger={<button>Dropdown</button>}
-        menu={[
-          <button onClick={handleMenuOne}>Menu 1</button>,
-          <button onClick={handleMenuTwo}>Menu 2</button>,
-        ]}
-      />
-    );
-  };
-  
-  const Dropdown = ({ trigger, menu }) => {
-    const [open, setOpen] = React.useState(false);
-  
-    const handleOpen = () => {
-      setOpen(!open);
-    };
-  
-    return (
-      <div className="dropdown">
-        {React.cloneElement(trigger, {
-          onClick: handleOpen,
-        })}
-        {open ? (
-          <ul className="menu">
-            {menu.map((menuItem, index) => (
-              <li key={index} className="menu-item">
-                {React.cloneElement(menuItem, {
-                  onClick: () => {
-                    menuItem.props.onClick();
-                    setOpen(false);
-                  },
-                })}
-              </li>
-            ))}
-          </ul>
-        ) : null}
+  useEffect(() => {
+ 
+    const check=()=>
+    {
+      
+    const concernedElement = document.querySelector(".click-text");
+
+    document.addEventListener("mousedown", (event) => {
+      if (concernedElement.contains(event.target)) {
+        setToggle(true)
+      } else {
+        
+        setToggle(false)
+      }
+    });
+    }
+
+    check()
+  },[])
+
+
+  return (
+    <div className=' ml-4 flex space-x-4 click-text '>
+      <div className='w-10'>
+        <button >
+
+          <img src={process.env.PUBLIC_URL + `/assets/profile/profile_pic.png`} />
+        </button>
       </div>
-    );
-  };
+
+      {
+        toggle === true ?
+
+
+          <div className='bg-[#fafafa]  border-2  space-y-2 text-center p-2 rounded-lg form-fonts'>
+            <button>
+
+            <h1>Change Passowrd</h1>
+            </button>
+
+            <hr></hr>
+            
+            <button>
+
+            <h1>Logout</h1>
+            </button>
+          </div> : ''
+      }
+
+
+    </div>
+  )
+}

@@ -4,6 +4,7 @@ import Signup from './pages/Signup';
 import Login from './pages/Login';
 import WorkSpaceCreation from './pages/WorkSpaceCreation';
 import Dashboard from './pages/Dashboard';
+import Project from './pages/Project';
 
 function App() {
   return (
@@ -15,6 +16,8 @@ function App() {
     <Route exact path='/signup' element={<Signup/>}/>
     <Route exact path='/signup/createworkspace' element={<WorkSpaceCreation/>}  />
     <Route exact path='/creator/dashboard' element={<Dashboard/> }/> 
+    <Route exact path='/project' element={<Project/>} /> 
+
   </Routes>
   
 

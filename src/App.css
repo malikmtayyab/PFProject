@@ -62,4 +62,13 @@
   text-align: center;
   font-size: 16px;
 }
-
+#project-bg
+{
+  background-image: url('../public/assets/project/project-bg.jpg');
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+.bg-tile
+{
+  background-color: rgba(250,250,250,0.2);
+}

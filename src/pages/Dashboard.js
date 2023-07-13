@@ -11,7 +11,7 @@ export default function Dashboard() {
   return (
     <div className='bg-[#fafafa] lg:flex  block justify-between lg:overflow-hidden'>
       
-      <Navbar/>
+      <Navbar creator={true}/>
       
       <div className='lg:h-screen  w-screen lg:w-1/2 executive-background lg:overflow-hidden '>
 
@@ -53,7 +53,7 @@ export default function Dashboard() {
       </div>
 
 <div className='fixed pt-10 top-3/4 '>
-{/* <Profile/> */}
+<Profile/>
 </div>
 </div>
  
