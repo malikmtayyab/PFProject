@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\work_space;
+use App\Models\workspace_admins;
 use Illuminate\Support\Str;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
@@ -15,7 +16,7 @@ class Work_Space_Controller extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'access_token' => 'required',
+            // 'access_token' => 'required',
             'image' => 'required|image',
             'workspace_name' => 'required',
             'created_by' => 'required',
@@ -29,53 +30,59 @@ class Work_Space_Controller extends Controller
             ]);
         }
 
-        $extracted_token = Access_Toekn_Extractor::tokenExtractor($request->input('access_token'));
-        $sessionValue = Access_Toekn_Extractor::getSessionValue('jwt_session');
-        if ($sessionValue == null) {
-            return response()->json([
-                'status' => 'failed',
-                'message' => "No Session Found",
-            ]);
-        }
-        if ($sessionValue == $extracted_token) {
-            try {
-                $work_space = new Work_Space;
+        // $extracted_token = Access_Toekn_Extractor::tokenExtractor($request->input('access_token'));
+        // $sessionValue = Access_Toekn_Extractor::getSessionValue('jwt_session');
+        // if ($sessionValue == null) {
+        //     return response()->json([
+        //         'status' => 'failed',
+        //         'message' => "No Session Found",
+        //     ]);
+        // }
+        // if ($sessionValue == $extracted_token) {
+        try {
+            $work_space = new Work_Space;
 
-                if ($request->hasFile('image')) {
-                    $file = $request->file('image');
-                    $filename = $file->getClientOriginalName();
+            if ($request->hasFile('image')) {
+                $file = $request->file('image');
+                $filename = $file->getClientOriginalName();
 
-                    $finalName = date("Y-m-d") . '.' . $filename;
-                    $file->move('images/', $finalName);
-                    $work_space->image = 'images/' . $finalName;
-                }
-
-                $work_space->id = Str::uuid()->toString();
-                $work_space->workspace_name = $request->input('workspace_name');
-                $work_space->created_by = $request->input('created_by');
-                $work_space->save();
-
-                return response()->json([
-                    'status' => 'success',
-                    'message' => 'Added successfully',
-                ]);
-            } catch (QueryException $e) {
-                return response()->json([
-                    'status' => 'failed',
-                    'message' => 'Error occurred while saving the workspace',
-                ]);
-            } catch (\Exception $e) {
-                return response()->json([
-                    'status' => 'failed',
-                    'message' => 'An unexpected error occurred',
-                ]);
+                $finalName = date("Y-m-d") . '.' . $filename;
+                $file->move('images/', $finalName);
+                $work_space->image = 'images/' . $finalName;
             }
-        } else {
+
+            $work_space->id = Str::uuid()->toString();
+            $work_space->workspace_name = $request->input('workspace_name');
+            $work_space->created_by = $request->input('created_by');
+            $work_space->save();
+
+            $workspaceAdmin = new workspace_admins;
+            $workspaceAdmin->id = Str::uuid()->toString();
+            $workspaceAdmin->user_id = $request->input('created_by');
+            $workspaceAdmin->workspace_id = $work_space->id;
+            $workspaceAdmin->save();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Added successfully',
+            ]);
+        } catch (QueryException $e) {
             return response()->json([
                 'status' => 'failed',
-                'message' => "Invalid Session",
+                'message' => 'Error occurred while saving the workspace',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'failed',
+                'message' => 'An unexpected error occurred',
             ]);
         }
+        // } else {
+        //     return response()->json([
+        //         'status' => 'failed',
+        //         'message' => "Invalid Session",
+        //     ]);
+        // }
     }
     public function show()
     {

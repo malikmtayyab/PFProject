@@ -2,24 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-use App\Models\UnverifiedUser;
-use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Validator;
 use App\Models\work_space;
 
 
 use Hash;
-use Symfony\Component\HttpFoundation\Session\Session;
-use Tymon\JWTAuth\JWTGuard;
-use Tymon\JWTAuth\Token as JWTToken;
-use Tymon\JWTAuth\Payload;
-use Tymon\JWTAuth\Facades\JWT;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use Tymon\JWTAuth\Facades\JWTFactory;
 
 
 
@@ -77,12 +70,19 @@ class AuthController extends Controller
             $session = session();
             $session->put("jwt_session", $user->getKey());
             $session->save();
+
+            $payload = JWTFactory::sub($user->id)->expiresAfter(now()->addDays(1))->make();
+            $token = JWTAuth::encode($payload)->get();
+
+
             if ($workspace) {
                 return response()->json([
                     'status' => 'success',
                     'message' => 'Login successful',
                     'token' => $token,
                     'workspace' => 'true',
+            'users' => auth()->user()
+
                 ]);
             } else {
                 return response()->json([
@@ -90,6 +90,8 @@ class AuthController extends Controller
                     'message' => 'Login successful',
                     'token' => $token,
                     'workspace' => 'false',
+            'users' => auth()->user()
+
                 ]);
             }
         } catch (\Exception $e) {
@@ -212,6 +214,7 @@ class AuthController extends Controller
             'access_token' => $token,
             'token_type' => 'bearer',
             'expires_in' => auth()->factory()->getTTL() * 60,
+            'users' => auth()->user()
         ]);
     }
 }

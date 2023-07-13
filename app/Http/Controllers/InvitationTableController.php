@@ -13,6 +13,8 @@ use Illuminate\Support\Facades\Mail;
 use App\Mail\InvitationEmail;
 use Illuminate\Support\Facades\Hash;
 use App\Mail\ExistingUserEmail;
+use App\Http\Controllers\Access_Toekn_Extractor;
+use App\Http\Controllers\EmailSender;
 
 
 class InvitationTableController extends Controller
@@ -58,49 +60,55 @@ class InvitationTableController extends Controller
         }
 
         // Get the token from the request.
-        $extracted_token = Access_Toekn_Extractor::tokenExtractor($request->input('access_token'));
-        $sessionValue = Access_Toekn_Extractor::getSessionValue('jwt_session');
-        if ($sessionValue == null) {
-            return response()->json([
-                'status' => 'failed',
-                'message' => "No Session Found",
-            ]);
-        }
-        if ($extracted_token == $sessionValue) {
+        // $extracted_token = Access_Token_Extractor::tokenExtractor($request->input('access_token'));
+        // $sessionValue = Access_Token_Extractor::getSessionValue('jwt_session');
+        // if ($sessionValue == null) {
+        //     return response()->json([
+        //         'status' => 'failed',
+        //         'message' => "No Session Found",
+        //     ]);
+        // }
+        // if ($extracted_token == $sessionValue) {
             try {
                 $finding_user = User::where('email', $request->input('email'))->first();
                 $workspace = DB::table('work_space')
-                    ->join('workspace_admins', 'work_space.id', '=', 'workspace_admins.id')
-                    ->where('workspace_admins.user_id', $extracted_token) // Replace 'John Doe' with the desired admin name
-                    ->select('workspace_name')
+                    ->join('workspace_admins', 'work_space.id', '=', 'workspace_admins.workspace_id')
+                    ->where('workspace_admins.user_id', $request->input('invitedby')) // Replace 'John Doe' with the desired admin name
+                    ->select('work_space.workspace_name')
                     ->get();
-                $invitedByID = User::find($extracted_token)->pluck('email');
-
-
+                $invitedByID = User::find($request->input('invitedby'))->pluck('email');
                 if ($finding_user) {
                     $invitation_table = new invitation_table;
                     $invitation_table->id = $finding_user->id;
-                    $invitation_table->invited_by = $extracted_token;
+                    $invitation_table->invited_by = $request->input('invitedby');
+                    // return $invitation_table;
                     if ($invitation_table->save()) {
 
-                        EmailSender::sendEmail(
+                        $emailSent = EmailSender::sendEmail(
                             $finding_user->email,
                             $invitedByID,
                             "You have been added to a New Team.",
                             $workspace
                         );
+                        if($emailSent==1){
                         return response()->json(['message' => 'Email sent successfully', 'status' => 'success']);
+                        }
+                        else{
+                        return response()->json(['message' => 'Email Not sent successfully', 'status' => 'Failed']);
+                        }
                     }
-
+                }
+                else{
                     $user = new User;
                     $user->id = Str::uuid()->toString();
                     $user->email = $request->input('email');
-                    $user->password = Hash::make(Str::random(8));
+                    $password = Str::random(8);
+                    $user->password = Hash::make($password);
 
                     if ($user->save()) {
                         $invitation_table = new invitation_table;
                         $invitation_table->id = $user->id;
-                        $invitation_table->invited_by = $extracted_token;
+                        $invitation_table->invited_by = $request->input('invitedby');
 
                         if ($invitation_table->save()) {
                             // Send welcome email to the user
@@ -108,7 +116,7 @@ class InvitationTableController extends Controller
 
                             EmailSender::sendEmailToRegister(
                                 $user->email,
-                                $user->password,
+                                $password,
                                 $invitedByID,
                                 "You have been added to a New Team.",
                                 $workspace
@@ -138,14 +146,15 @@ class InvitationTableController extends Controller
                     'message' => "error occur",
                 ]);
             }
-        } else {
-            // Remove the 'jwt_session' value from the session
-            session()->forget('jwt_session');
-            return response()->json([
-                'status' => 'failed',
-                'message' => "Invalid session",
-            ]);
-        }
+        // } else {
+        //     // Remove the 'jwt_session' value from the session
+        //     session()->forget('jwt_session');
+        //     return response()->json([
+        //         'status' => 'failed',
+        //         'message' => "Invalid session",
+        //     ]);
+        // }
+
     }
 
     /**
