@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\task_assignment;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 class TaskAssignmentController extends Controller
 {
@@ -35,7 +37,50 @@ class TaskAssignmentController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $validator = Validator::make($request->all(), [
+            'task_id' => 'required',
+            'email' => 'required|email',
+        ]);
+        
+        // Check if validation fails
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'failed',
+                'message' => 'Validation failed.',
+                'errors' => $validator->errors(),
+            ]);
+        }
+        
+        try {
+            $task_assignment = new task_assignment;
+            $task_assignment->id = Str::uuid()->toString();
+            $task_assignment->task_id = $request->input('task_id');
+            $email = $request->input('email');
+        
+            // Retrieve the user based on the email
+            $user = User::where('email', $email)->first();
+        
+            if ($user) {
+                $task_assignment->user_id = $user->id;
+                $task_assignment->save();
+        
+                return response()->json([
+                    'status' => 'success',
+                    'message' => 'Task assignment created successfully.',
+                ]);
+            } else {
+                return response()->json([
+                    'status' => 'failed',
+                    'message' => 'User with the provided email does not exist.',
+                ]);
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'failed',
+                'message' => 'An error occurred while creating the task assignment.',
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**

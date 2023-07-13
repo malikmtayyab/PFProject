@@ -8,6 +8,10 @@ use App\Http\Controllers\Work_Space_Controller;
 use App\Http\Controllers\InvitationTableController;
 use App\Http\Controllers\WorkspaceAdminsController;
 use App\Http\Controllers\ProjectSpaceController;
+use App\Http\Controllers\ProjectMembersController;
+use App\Http\Controllers\ProjectTasksController;
+
+
 
 
 
@@ -44,6 +48,12 @@ Route::post('/workspaceadmin', [WorkspaceAdminsController::class, 'store']);
 //ProjectSpaceController
 Route::post('/projectspace', [ProjectSpaceController::class, 'store']);
 
+//projectmemer
+Route::post('/projectmember', [ProjectMembersController::class, 'store']);
+
+//project task 
+
+Route::post('/projecttask', [ProjectTasksController::class, 'store']);
 
 
 // Protected Routes (Require Authentication)
