@@ -1,10 +1,11 @@
 <?php
 
 namespace App\Http\Controllers;
+use Tymon\JWTAuth\Facades\JWT;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use Tymon\JWTAuth\Payload;
 
-
-class Access_Toekn_Extractor{
+class Access_Token_Extractor{
 
     static function tokenExtractor($token):string{
         // Remove the "Bearer " prefix from the token.

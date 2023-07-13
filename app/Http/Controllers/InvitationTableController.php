@@ -14,6 +14,8 @@ use App\Mail\InvitationEmail;
 use Illuminate\Support\Facades\Hash;
 use App\Mail\ExistingUserEmail;
 
+use App\Http\Controllers\Access_Token_Extractor;
+
 
 class InvitationTableController extends Controller
 {
@@ -58,8 +60,8 @@ class InvitationTableController extends Controller
         }
 
         // Get the token from the request.
-        $extracted_token = Access_Toekn_Extractor::tokenExtractor($request->input('access_token'));
-        $sessionValue = Access_Toekn_Extractor::getSessionValue('jwt_session');
+        $extracted_token = Access_Token_Extractor::tokenExtractor($request->input('access_token'));
+        $sessionValue = Access_Token_Extractor::getSessionValue('jwt_session');
         if ($sessionValue == null) {
             return response()->json([
                 'status' => 'failed',
@@ -95,7 +97,8 @@ class InvitationTableController extends Controller
                     $user = new User;
                     $user->id = Str::uuid()->toString();
                     $user->email = $request->input('email');
-                    $user->password = Hash::make(Str::random(8));
+                    $password=Str::random(8);
+                    $user->password = Hash::make($password);
 
                     if ($user->save()) {
                         $invitation_table = new invitation_table;
@@ -108,7 +111,7 @@ class InvitationTableController extends Controller
 
                             EmailSender::sendEmailToRegister(
                                 $user->email,
-                                $user->password,
+                                $password,
                                 $invitedByID,
                                 "You have been added to a New Team.",
                                 $workspace
