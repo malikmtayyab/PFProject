@@ -25,8 +25,8 @@ class Work_Space_Controller extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'status' => 'failed',
-                'message' => $validator->errors(),
-            ], 400);
+                'message' => 'Fill all the fields',
+            ]);
         }
 
         $extracted_token = Access_Toekn_Extractor::tokenExtractor($request->input('access_token'));
