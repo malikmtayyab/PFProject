@@ -99,6 +99,7 @@ class AuthController extends Controller
             return response()->json([
                 'status' => 'failed',
                 'message' => 'Incorrect email',
+                'error' => $e
             ]);
         }
     }

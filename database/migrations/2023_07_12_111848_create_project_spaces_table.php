@@ -16,26 +16,17 @@ return new class extends Migration
         Schema::create('project_spaces', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('project_name');
-            $table->string('project_status');
+            $table->enum('project_status',  ['In-Progress', 'Completed']);
             $table->date('project_deadline');
-            $table->date('project_completion_date');
+            $table->date('project_completion_date')->nullable();
             $table->string('overdue');
             $table->string('project_completion_percentage');
             $table->string('project_owner');
             $table->date('project_creation_date');
-
             $table->uuid('workspace_id');
             $table->foreign('workspace_id')->references('id')->on('work_space');
             $table->uuid('lead_id');
             $table->foreign('lead_id')->references('id')->on('users');
-
-
-
-
-
-
-
-
             $table->timestamps();
         });
     }

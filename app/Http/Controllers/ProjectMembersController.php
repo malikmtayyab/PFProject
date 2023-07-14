@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\project_members;
 use Illuminate\Http\Request;
 use App\Models\User;
+use Illuminate\Http\Response;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
+use \Exception;
 
 class ProjectMembersController extends Controller
 {
@@ -42,45 +44,43 @@ class ProjectMembersController extends Controller
             'project_id' => 'required',
             'email' => 'required|email',
         ]);
-        
+
         // Check if validation fails
         if ($validator->fails()) {
             return response()->json([
                 'status' => 'failed',
                 'message' => 'Validation failed.',
                 'errors' => $validator->errors(),
-            ]);
+            ], Response::HTTP_BAD_REQUEST);
         }
-        
+
         try {
             $project_members = new project_members;
             $project_members->id = Str::uuid()->toString();
             $project_members->project_id = $request->input('project_id');
-            $email = $request->input('email');
-        
             // Retrieve the user based on the email
-            $user = User::where('email', $email)->first();
-        
+            $user = User::where('email', $request->input('email'))->first();
+
             if ($user) {
                 $project_members->user_id = $user->id;
                 $project_members->save();
-        
+
                 return response()->json([
                     'status' => 'success',
                     'message' => 'Project member added successfully.',
-                ]);
+                ], Response::HTTP_OK);
             } else {
                 return response()->json([
                     'status' => 'failed',
                     'message' => 'User with the provided email does not exist.',
-                ]);
+                ], Response::HTTP_INTERNAL_SERVER_ERROR);
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return response()->json([
                 'status' => 'failed',
                 'message' => 'An error occurred while adding project member.',
                 'error' => $e->getMessage(),
-            ]);
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 

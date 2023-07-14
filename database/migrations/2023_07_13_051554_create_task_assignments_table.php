@@ -16,9 +16,9 @@ return new class extends Migration
         Schema::create('task_assignments', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('task_id');
-            $table->foreign('task_id')->references('id')->on('project_tasks');
+            $table->foreign('task_id')->references('id')->on('project_tasks')->onDelete('cascade')->onUpdate('cascade');
             $table->uuid('assigned_id');
-            $table->foreign('assigned_id')->references('id')->on('users');
+            $table->foreign('assigned_id')->references('id')->on('users')->onDelete('cascade')->onUpdate('cascade');
             $table->timestamps();
         });
     }
