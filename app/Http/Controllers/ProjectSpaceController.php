@@ -3,11 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\project_space;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
+use Illuminate\Http\Response;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 
 class ProjectSpaceController extends Controller
@@ -41,92 +44,70 @@ class ProjectSpaceController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'access_token' => 'required',
             'projectname' => 'required',
-            'projectstatus' => 'required',
             'projectdeadline' => 'required|date',
-            'projectcompletiondate' => 'required|date',
-            'projectcompletionpercentage' => 'required',
-            'projectowner' => 'required',
-            'email' => 'required|email',
+            'lead_email' => 'required|email',
         ]);
 
-        // Check if validation fails
         if ($validator->fails()) {
             return response()->json($validator->errors(), 400);
         }
 
-        // Get the token from the request.
-        $extracted_token = Access_Toekn_Extractor::tokenExtractor($request->input('access_token'));
-        $sessionValue = Access_Toekn_Extractor::getSessionValue('jwt_session');
-        if ($sessionValue == null) {
+        $cookie_value = $request->cookie("LogIn_Session");
+        $project_space = new project_space;
+        $project_space->id = Str::uuid()->toString();
+        $project_space->project_name = $request->input('projectname');
+        $project_space->project_status = 'In-Progress';
+        $project_space->project_deadline = $request->input('projectdeadline');
+        $project_space->project_completion_date = null;
+        $project_space->project_completion_percentage = 0;
+        $project_space->project_owner = $cookie_value;
+        $project_creation_Date = Carbon::now();
+        $project_space->project_creation_date = $project_creation_Date;
+
+        $workspaceAdmin = DB::table('workspace_admins')->where('user_id', $cookie_value)->first();
+
+        if (!$workspaceAdmin) {
+            return response()->json([
+                'status' => "failed",
+                'message' => "You are not allowed to create a Project"
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        $leadUser = DB::table('users')->where('email', $request->input('lead_email'))->first();
+
+        if (!$leadUser) {
+            return response()->json([
+                'status' => "failed",
+                'message' => "Incorrect Lead Entered"
+            ], Response::HTTP_BAD_REQUEST);
+        }
+        $project_space->workspace_id = $workspaceAdmin->workspace_id;
+        $project_space->lead_id = $leadUser->id;
+        $projectDeadline = Carbon::parse($project_space->project_deadline);
+        $project_space->overdue = "false";
+
+        if ($project_creation_Date->greaterThan($projectDeadline)) {
+            return response()->json([
+                "status" => "failed",
+                "message" => "Deadline can't be greater than the current date."
+            ], Response::HTTP_BAD_REQUEST);
+        }
+        if ($project_space->save()) {
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Project created',
+                'project_id' => $project_space->id
+            ], Response::HTTP_OK);
+        } else {
             return response()->json([
                 'status' => 'failed',
-                'message' => "No Session Found",
-            ]);
-        }
-        if($sessionValue==$extracted_token)
-        {
-            $project_space = new project_space;
-            $project_owner = $request->input('projectowner');
-            $project_space->project_name = $request->input('projectname');
-            $project_space->project_status = $request->input('projectstatus');
-            $project_space->project_deadline = $request->input('projectdeadline');
-            $project_space->project_completion_date = $request->input('projectcompletiondate');
-            $project_space->project_completion_percentage = $request->input('projectcompletionpercentage');
-            $project_space->project_owner = $project_owner; // Save projectowner value as project_owner
-            $project_space->project_creation_date = Carbon::now(); // Set current date
-
-            // Check if the current user's ID exists in the workspace_admins table
-            $workspaceAdmin = DB::table('workspace_admins')->where('user_id', $project_owner)->first();
-
-            if ($workspaceAdmin) {
-                $project_space->workspace_id = $workspaceAdmin->workspace_id;
-            } else {
-                $project_space->workspace_id = null; // Set workspace_id to null if user_id doesn't exist
-            }
-
-            $email = $request->input('email');
-            $leadUser = DB::table('users')->where('email', $email)->first();
-
-            if ($leadUser) {
-                $project_space->lead_id = $leadUser->id;
-            } else {
-                $project_space->lead_id = null; // Set lead_id to null if email doesn't exist
-            }
-
-            $project_space->id = Str::uuid()->toString();
-
-            $projectDeadline = Carbon::parse($project_space->project_deadline);
-            $projectCompletionDate = Carbon::parse($project_space->project_completion_date);
-
-            // Set overdue field based on completion date and deadline
-            if ($projectCompletionDate->greaterThan($projectDeadline)) {
-                $project_space->overdue = "true";
-            } else {
-                $project_space->overdue = "false";
-            }
-
-            // Save the project_space instance
-            if ($project_space->save()) {
-                return response()->json([
-                    'status' => 'success',
-                    'message' => 'project created',
-                ]);
-            } else {
-                return response()->json([
-                    'status' => 'failed',
-                    'message' => 'not created',
-                ]);
-            }
-        }
-        else{
-            return response()->json([
-                'status' => 'failed',
-                'message' => "Invalid Session",
-            ]);
+                'message' => 'Project not created',
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
+
+
 
     /**
      * Display the specified resource.
@@ -157,9 +138,172 @@ class ProjectSpaceController extends Controller
      * @param  \App\Models\project_space  $project_space
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, project_space $project_space)
+    // public function update_status(Request $request)
+    // {
+    //     $validator = Validator::make($request->all(), [
+    //         'project_id' => 'required|uuid',
+    //         'project_status' => ['required', 'string', Rule::in(['In-Progress', 'Completed'])],
+    //     ]);
+
+    //     if ($validator->fails()) {
+    //         return response()->json($validator->errors(), 400);
+    //     }
+    //     $updatedRows = project_space
+    //         ::where('id', $request->input('project_id'))
+    //         ->update(['project_status' => $request->input('project_status')]);
+    //     if ($updatedRows > 0) {
+    //         return response()->json([
+    //             'status' => 'success',
+    //             'message' => 'Project status updated successfully',
+    //         ], Response::HTTP_OK);
+    //     } else {
+    //         return response()->json([
+    //             'status' => 'failed',
+    //             'message' => 'No project found with the given ID',
+    //         ], Response::HTTP_NOT_FOUND);
+    //     }
+    // }
+
+    public function update_status(Request $request)
     {
-        //
+        $validator = Validator::make($request->all(), [
+            'project_id' => 'required|uuid',
+            'project_status' => ['required', 'string', Rule::in(['In-Progress', 'Completed'])],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 400);
+        }
+
+        try {
+            $updatedRows = project_space::where('id', $request->input('project_id'))
+                ->update(['project_status' => $request->input('project_status')]);
+
+            if ($updatedRows > 0) {
+                return response()->json([
+                    'status' => 'success',
+                    'message' => 'Project status updated successfully',
+                ], Response::HTTP_OK);
+            } else {
+                return response()->json([
+                    'status' => 'failed',
+                    'message' => 'No project found with the given ID',
+                ], Response::HTTP_NOT_FOUND);
+            }
+        } catch (QueryException $e) {
+            return response()->json([
+                'status' => 'failed',
+                'message' => 'Error occurred while updating the project status',
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    // public function update_deadline(Request $request)
+    // {
+    //     $validator = Validator::make($request->all(), [
+    //         'project_id' => 'required|uuid',
+    //         'project_deadline' =>  'required|date',
+    //     ]);
+
+    //     if ($validator->fails()) {
+    //         return response()->json($validator->errors(), 400);
+    //     }
+    //     $updatedRows = project_space
+    //         ::where('id', $request->input('project_id'))
+    //         ->update(['project_deadline' => $request->input('project_deadline')]);
+    //     if ($updatedRows > 0) {
+    //         return response()->json([
+    //             'status' => 'success',
+    //             'message' => 'Project Deadline updated successfully',
+    //         ], Response::HTTP_OK);
+    //     } else {
+    //         return response()->json([
+    //             'status' => 'failed',
+    //             'message' => 'No project found with the given ID',
+    //         ], Response::HTTP_NOT_FOUND);
+    //     }
+    // }
+    public function update_deadline(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'project_id' => 'required|uuid',
+            'project_deadline' => 'required|date',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 400);
+        }
+
+        try {
+            $updatedRows = project_space::where('id', $request->input('project_id'))
+                ->update(['project_deadline' => $request->input('project_deadline')]);
+
+            if ($updatedRows > 0) {
+                return response()->json([
+                    'status' => 'success',
+                    'message' => 'Project Deadline updated successfully',
+                ], Response::HTTP_OK);
+            } else {
+                return response()->json([
+                    'status' => 'failed',
+                    'message' => 'No project found with the given ID',
+                ], Response::HTTP_NOT_FOUND);
+            }
+        } catch (QueryException $e) {
+            return response()->json([
+                'status' => 'failed',
+                'message' => 'Error occurred while updating the project deadline',
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    public function add_completion_date(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'project_id' => 'required|uuid',
+            'completion_date' => 'required|date',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 400);
+        }
+
+        try {
+            $updatedRows = project_space::where('id', $request->input('project_id'))
+                ->update(['project_completion_date' => $request->input('completion_date')]);
+
+            if ($updatedRows > 0) {
+                return response()->json([
+                    'status' => 'success',
+                    'message' => 'Project Deadline updated successfully',
+                ], Response::HTTP_OK);
+            } else {
+                return response()->json([
+                    'status' => 'failed',
+                    'message' => 'No project found with the given ID',
+                ], Response::HTTP_NOT_FOUND);
+            }
+        } catch (QueryException $e) {
+            return response()->json([
+                'status' => 'failed',
+                'message' => 'Error occurred while updating the project deadline',
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    public function update_overdue(bool $overdue, string $project_id)
+    {
+        try {
+            $updatedRows = project_space::where('id', $project_id)
+                ->update(['overdue' => $overdue]);
+            if ($updatedRows > 0) {
+                return true;
+            } else {
+                return false;
+            }
+        } catch (QueryException $e) {
+            return false;
+        }
     }
 
     /**
@@ -168,8 +312,45 @@ class ProjectSpaceController extends Controller
      * @param  \App\Models\project_space  $project_space
      * @return \Illuminate\Http\Response
      */
-    public function destroy(project_space $project_space)
+    public function delete(Request $request)
     {
-        //
+        // {
+        //     $validator = Validator::make($request->all(), [
+        //         'project_id' => 'string'
+        //     ]);
+
+        //     if ($validator->fails()) {
+        //         return response()->json($validator->errors(), 400);
+        //     }
+        //     $deletedRows = project_space::where('id', $request->input('project_id'))->delete();
+        //     if ($deletedRows > 0) {
+        //         // Project deleted successfully
+        //         return response()->json(['message' => 'Project deleted successfully'], Response::HTTP_OK);
+        //     } else {
+        //         // Project not found or deletion failed
+        //         return response()->json(['message' => 'Project not found or deletion failed'], Response::HTTP_NOT_FOUND);
+        //     }
+        $validator = Validator::make($request->all(), [
+            'project_id' => 'string'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 400);
+        }
+
+        try {
+            $deletedRows = project_space::where('id', $request->input('project_id'))->delete();
+
+            if ($deletedRows > 0) {
+                // Project deleted successfully
+                return response()->json(['message' => 'Project deleted successfully'], Response::HTTP_OK);
+            } else {
+                // Project not found or deletion failed
+                return response()->json(['message' => 'Project not found or deletion failed'], Response::HTTP_NOT_FOUND);
+            }
+        } catch (QueryException $e) {
+            // Exception occurred during database operation
+            return response()->json(['message' => 'Error occurred while deleting the project'], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 }

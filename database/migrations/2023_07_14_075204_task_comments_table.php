@@ -13,13 +13,13 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('project_members', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->uuid('project_id');
-            $table->foreign('project_id')->references('id')->on('project_spaces')->onDelete('cascade')->onUpdate('cascade');
+        Schema::create('task_comments', function(Blueprint $table){
+            $table->uuid('task_id');
             $table->uuid('user_id');
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade')->onUpdate('cascade');
+            $table->string('comment', 255);
             $table->timestamps();
+            $table->foreign('task_id')->references('id')->on('project_tasks')->onDelete('cascade')->onUpdate('cascade');
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade')->onUpdate('cascade');
         });
     }
 
@@ -30,6 +30,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('project_members');
+        //
     }
 };

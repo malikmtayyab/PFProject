@@ -6,6 +6,7 @@ use App\Models\workspace_admins;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\work_space;
+use Illuminate\Http\Response;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
 
@@ -42,11 +43,9 @@ class WorkspaceAdminsController extends Controller
      */
     public function store(Request $request)
     {
+        // Validate the request data
         $validator = Validator::make($request->all(), [
-            'access_token' => 'required',
-            'image' => 'required|image',
-            'workspace_name' => 'required',
-            'created_by' => 'required',
+            "admin_email" => 'required'
         ]);
 
         // Check if validation fails
@@ -54,47 +53,42 @@ class WorkspaceAdminsController extends Controller
             return response()->json([
                 'status' => 'failed',
                 'message' => $validator->errors(),
-            ], 400);
+            ], Response::HTTP_BAD_REQUEST);
         }
 
-        $extracted_token = Access_Toekn_Extractor::tokenExtractor($request->input('access_token'));
-        $sessionValue = Access_Toekn_Extractor::getSessionValue('jwt_session');
-        if ($sessionValue == null) {
-            return response()->json([
-                'status' => 'failed',
-                'message' => "No Session Found",
-            ]);
-        }
-        if ($sessionValue == $extracted_token) {
+        // Retrieve the cookie value and session value
+            $cookie_value = $request->cookie("LogIn_Session");
+
             $workspace_admin = new workspace_admins;
-            $email = $request->input('email');
-            $workspace = $request->input('workspace_id');
-            $workspace_admin->id = Str::uuid()->toString();
 
-            // Search for the user by email
-            $user = User::where('email', $email)->first();
+            // Find the user by email
+            $user = User::where('email', $request->input('admin_email'))->first();
+
             if ($user) {
-                $workspaceID = Work_Space::where('created_by', $workspace)->first()->id;
-                $userID = User::where('email', $email)->first()->id;
-                $workspace_admin->workspace_id = $workspaceID;
-                $workspace_admin->user_id = $userID;
+                // Find the workspace ID for the current user
+                $workspaceID = workspace_admins::where('user_id', $cookie_value)->first()->workspace_id;
 
+                // Set the properties of the workspace admin
+                $workspace_admin->id = Str::uuid()->toString();
+                $workspace_admin->workspace_id = $workspaceID;
+                $workspace_admin->user_id = $user->id;
+
+                // Save the workspace admin
                 if ($workspace_admin->save()) {
-                    // Return a success response or any other desired logic
+                    // Return a success response
                     return response()->json(['message' => 'Workspace admin created successfully']);
                 } else {
                     // Return an error response if saving the workspace admin fails
-                    return response()->json(['message' => 'Failed to create workspace admin'], 500);
+                    return response()->json(['message' => 'Failed to create workspace admin'], Response::HTTP_INTERNAL_SERVER_ERROR);
                 }
+            } else {
+                // Return an error response if the admin email is incorrect
+                return response()->json([
+                    'status' => 'failed',
+                    'message' => "Entered Admin Email is incorrect.",
+                ], Response::HTTP_BAD_REQUEST);
             }
-        } else {
-            return response()->json([
-                'status' => 'failed',
-                'message' => "Invalid Session",
-            ]);
         }
-    }
-
     /**
      * Display the specified resource.
      *
@@ -135,8 +129,9 @@ class WorkspaceAdminsController extends Controller
      * @param  \App\Models\workspace_admins  $workspace_admins
      * @return \Illuminate\Http\Response
      */
-    public function destroy(workspace_admins $workspace_admins)
+    public function delete(Request $request)
     {
-        //
+        
+
     }
 }

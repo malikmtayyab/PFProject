@@ -30,18 +30,6 @@ class Work_Space_Controller extends Controller
         }
         
         $cookie_value = $request->cookie("LogIn_Session");
-        $sessionValue = Access_Token_Extractor::getSessionValue('login_session');
-        
-        if (!$request->hasCookie('LogIn_Session') || $cookie_value === null || $sessionValue === null || $sessionValue !== $cookie_value) {
-            Access_Token_Extractor::destroySession();
-        
-            return response()->json([
-                'status' => 'failed',
-                'message' => 'Invalid Cookies or No Session Found',
-            ])->cookie("LogIn_Session", null, -1);
-        }
-        
-        if ($sessionValue === $cookie_value) {
             try {
                 $work_space = new Work_Space;
         
@@ -80,14 +68,6 @@ class Work_Space_Controller extends Controller
                     'message' => 'An unexpected error occurred',
                 ]);
             }
-        } else {
-            Access_Token_Extractor::destroySession();
-            return response()->json([
-                'status' => 'failed',
-                'message' => "Invalid Session",
-            ])->cookie("LogIn_Session", null, -1);
-        }
-        
     }
     public function show()
     {

@@ -35,32 +35,32 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 // Authentication Routes
 Route::post('login', [AuthController::class, 'login']);
 Route::post('register', [AuthController::class, 'register']);
-Route::post('check_authorization', [AuthController::class, 'authorizeJWT_Session']);
-Route::get('verifyCookie',[ApiAuthenticationController::class, 'checkAPICookie']);
+Route::group(['middleware' => ['api']], function(){
+    Route::post('check_authorization', [AuthController::class, 'authorizeJWT_Session']);
+    Route::get('verifyCookie',[ApiAuthenticationController::class, 'checkAPICookie']);
+    //work_space route
 
+    Route::post('/createworkspace', [Work_Space_Controller::class, 'store']);
+    Route::post('/inviteby', [InvitationTableController::class, 'store']);
 
-//work_space route
+    Route::post('/workspaceadmin', [WorkspaceAdminsController::class, 'store']);
 
-Route::post('/createworkspace', [Work_Space_Controller::class, 'store']);
-Route::post('/inviteby', [InvitationTableController::class, 'store']);
+    //ProjectSpaceController
+    Route::post('/projectspace', [ProjectSpaceController::class, 'store']);
 
-Route::post('/workspaceadmin', [WorkspaceAdminsController::class, 'store']);
+    //projectmemer
+    Route::post('/projectmember', [ProjectMembersController::class, 'store']);
 
-//ProjectSpaceController
-Route::post('/projectspace', [ProjectSpaceController::class, 'store']);
+    //project task
 
-//projectmemer
-Route::post('/projectmember', [ProjectMembersController::class, 'store']);
-
-//project task
-
-Route::post('/projecttask', [ProjectTasksController::class, 'store']);
+    Route::post('/projecttask', [ProjectTasksController::class, 'store']);
+});
 
 
 // Protected Routes (Require Authentication)
-Route::group(['middleware' => 'auth:api'], function () {
-    Route::post('logout', [AuthController::class, 'logout'])->name('logout');
-    Route::post('refresh', [AuthController::class, 'refresh'])->name('refresh');
-    Route::get('me', [AuthController::class, 'me'])->name('me');
-});
+// Route::group(['middleware' => 'auth:api'], function () {
+//     Route::post('logout', [AuthController::class, 'logout'])->name('logout');
+//     Route::post('refresh', [AuthController::class, 'refresh'])->name('refresh');
+//     Route::get('me', [AuthController::class, 'me'])->name('me');
+// });
 

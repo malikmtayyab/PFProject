@@ -17,20 +17,13 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->string('task_name');
             $table->uuid('project_id');
-            $table->foreign('project_id')->references('id')->on('project_spaces');
             $table->string('task_status');
             $table->string('task_priority');
             $table->date('task_deadline');
             $table->date('task_completion_date');
             $table->string('task_overdue');
             $table->date('task_creation_date');
-
-
-
-
-
-
-
+            $table->foreign('project_id')->references('id')->on('project_spaces')->onDelete('cascade')->onUpdate('cascade');
             $table->timestamps();
         });
     }
