@@ -20,7 +20,7 @@ class Work_Space_Controller extends Controller
             'workspace_name' => 'required',
             'created_by' => 'required',
         ]);
-
+        
         // Check if validation fails
         if ($validator->fails()) {
             return response()->json([
@@ -28,42 +28,43 @@ class Work_Space_Controller extends Controller
                 'message' => 'Fill all the fields',
             ]);
         }
+        
         $cookie_value = $request->cookie("LogIn_Session");
         $sessionValue = Access_Token_Extractor::getSessionValue('login_session');
-
+        
         if (!$request->hasCookie('LogIn_Session') || $cookie_value === null || $sessionValue === null || $sessionValue !== $cookie_value) {
             Access_Token_Extractor::destroySession();
-
+        
             return response()->json([
                 'status' => 'failed',
                 'message' => 'Invalid Cookies or No Session Found',
             ])->cookie("LogIn_Session", null, -1);
         }
-
+        
         if ($sessionValue === $cookie_value) {
             try {
                 $work_space = new Work_Space;
-
+        
                 if ($request->hasFile('image')) {
                     $file = $request->file('image');
                     $filename = $file->getClientOriginalName();
-
+        
                     $finalName = date("Y-m-d") . '.' . $filename;
                     $file->move('images/', $finalName);
                     $work_space->image = 'images/' . $finalName;
                 }
-
+        
                 $work_space->id = Str::uuid()->toString();
                 $work_space->workspace_name = $request->input('workspace_name');
                 $work_space->created_by = $cookie_value;
                 $work_space->save();
-
+        
                 $workspaceAdmin = new workspace_admins;
                 $workspaceAdmin->id = Str::uuid()->toString();
                 $workspaceAdmin->user_id = $cookie_value;
                 $workspaceAdmin->workspace_id = $work_space->id;
                 $workspaceAdmin->save();
-
+        
                 return response()->json([
                     'status' => 'success',
                     'message' => 'Added successfully',
@@ -86,6 +87,7 @@ class Work_Space_Controller extends Controller
                 'message' => "Invalid Session",
             ])->cookie("LogIn_Session", null, -1);
         }
+        
     }
     public function show()
     {
