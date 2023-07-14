@@ -21,4 +21,8 @@ class Access_Token_Extractor{
         $session = session();
         return $session->get($key);
     }
+    static function destroySession(){
+        $session = session();
+        $session->forget("login_session");
+    }
 }

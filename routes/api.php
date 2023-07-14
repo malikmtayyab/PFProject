@@ -36,6 +36,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 Route::post('login', [AuthController::class, 'login']);
 Route::post('register', [AuthController::class, 'register']);
 Route::post('check_authorization', [AuthController::class, 'authorizeJWT_Session']);
+Route::get('verifyCookie',[ApiAuthenticationController::class, 'checkAPICookie']);
 
 
 //work_space route
@@ -51,7 +52,7 @@ Route::post('/projectspace', [ProjectSpaceController::class, 'store']);
 //projectmemer
 Route::post('/projectmember', [ProjectMembersController::class, 'store']);
 
-//project task 
+//project task
 
 Route::post('/projecttask', [ProjectTasksController::class, 'store']);
 

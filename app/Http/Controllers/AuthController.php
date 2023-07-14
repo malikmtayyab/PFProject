@@ -3,14 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Models\invitation_table;
 use App\Models\User;
+use App\Models\workspace_admins;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
 use App\Models\work_space;
 
 
-use Hash;
+use Illuminate\Support\Facades\Hash;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Tymon\JWTAuth\Facades\JWTFactory;
 
@@ -65,34 +67,33 @@ class AuthController extends Controller
             $user = auth()->user();
 
             // Check if user ID exists in Work_Space table
-            $workspace = Work_Space::where('created_by', $user->id)->first();
+            $workspace = workspace_admins::where('user_id', $user->id)->first();
+            $workspace_member = invitation_table::where('id', $user->id)->first();
             //Creating Session
             $session = session();
-            $session->put("jwt_session", $user->getKey());
+            $session->put("login_session", $user->id);
             $session->save();
 
-            $payload = JWTFactory::sub($user->id)->expiresAfter(now()->addDays(1))->make();
-            $token = JWTAuth::encode($payload)->get();
+            // $payload = JWTFactory::sub($user->id)->expiresAfter(now()->addDays(1))->make();
+            // $token = JWTAuth::encode($payload)->get();
 
 
-            if ($workspace) {
+            if ($workspace || $workspace_member) {
                 return response()->json([
                     'status' => 'success',
                     'message' => 'Login successful',
                     'token' => $token,
                     'workspace' => 'true',
-            'users' => auth()->user()
-
-                ]);
+                    'user_name'=>$user->name
+                ])->cookie("LogIn_Session", $session->get("login_session"), 60);
             } else {
                 return response()->json([
                     'status' => 'success',
                     'message' => 'Login successful',
                     'token' => $token,
                     'workspace' => 'false',
-            'users' => auth()->user()
-
-                ]);
+                    'user_name'=>$user->name
+                ])->cookie("LogIn_Session", $session->get("login_session"), 60);
             }
         } catch (\Exception $e) {
             return response()->json([

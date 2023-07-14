@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\InvitationEmail;
 use Illuminate\Support\Facades\Hash;
-use App\Mail\ExistingUserEmail;
+use App\Mail\ExistingUserEmail; 
 use App\Http\Controllers\EmailSender;
 
 use App\Http\Controllers\Access_Token_Extractor;
