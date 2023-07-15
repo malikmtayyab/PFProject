@@ -17,9 +17,9 @@ class Access_Token_Extractor{
        return $decodedToken->getPayload()->get('sub');
     }
 
-    static function getSessionValue($key):string{
+    static function getSessionValue($key): string|null {
         $session = session();
-        return $session->get($key);
+        return $session->get($key, null);
     }
     static function destroySession(){
         $session = session();

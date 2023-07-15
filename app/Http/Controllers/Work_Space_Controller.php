@@ -19,7 +19,7 @@ class Work_Space_Controller extends Controller
             'image' => 'required|image',
             'workspace_name' => 'required',
         ]);
-
+        
         // Check if validation fails
         if ($validator->fails()) {
             return response()->json([
@@ -27,30 +27,31 @@ class Work_Space_Controller extends Controller
                 'message' => 'Fill all the fields',
             ]);
         }
+        
         $cookie_value = $request->cookie("LogIn_Session");
             try {
                 $work_space = new Work_Space;
-
+        
                 if ($request->hasFile('image')) {
                     $file = $request->file('image');
                     $filename = $file->getClientOriginalName();
-
+        
                     $finalName = date("Y-m-d") . '.' . $filename;
                     $file->move('images/', $finalName);
                     $work_space->image = 'images/' . $finalName;
                 }
-
+        
                 $work_space->id = Str::uuid()->toString();
                 $work_space->workspace_name = $request->input('workspace_name');
                 $work_space->created_by = $cookie_value;
                 $work_space->save();
-
+        
                 $workspaceAdmin = new workspace_admins;
                 $workspaceAdmin->id = Str::uuid()->toString();
                 $workspaceAdmin->user_id = $cookie_value;
                 $workspaceAdmin->workspace_id = $work_space->id;
                 $workspaceAdmin->save();
-
+        
                 return response()->json([
                     'status' => 'success',
                     'message' => 'Added successfully',

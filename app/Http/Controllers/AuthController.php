@@ -60,14 +60,14 @@ class AuthController extends Controller
             if (!$token = auth()->attempt($credentials)) {
                 return response()->json([
                     'status' => 'failed',
-                    'message' => 'Email not exist',
+                    'message' => 'Email or password is incorrect',
                 ]);
             }
 
             $user = auth()->user();
 
             // Check if user ID exists in Work_Space table
-            $workspace = workspace_admins::where('user_id', $user->id)->first();
+            $workspace = workspace_admins::where('id', $user->id)->first();
             $workspace_member = invitation_table::where('id', $user->id)->first();
             //Creating Session
             $session = session();
@@ -84,7 +84,8 @@ class AuthController extends Controller
                     'message' => 'Login successful',
                     'token' => $token,
                     'workspace' => 'true',
-                    'user_name'=>$user->name
+                    'user_name'=>$user->name,
+                    'session' => $session->get('login_session')
                 ])->cookie("LogIn_Session", $session->get("login_session"), 60);
             } else {
                 return response()->json([
@@ -92,14 +93,15 @@ class AuthController extends Controller
                     'message' => 'Login successful',
                     'token' => $token,
                     'workspace' => 'false',
-                    'user_name'=>$user->name
+                    'user_name'=>$user->name,
+                    'session' => $session->get('login_session')
                 ])->cookie("LogIn_Session", $session->get("login_session"), 60);
             }
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'failed',
-                'message' => 'Incorrect email',
-                'error' => $e
+                'message' => 'Internal server error',
+                'error'=>$e
             ]);
         }
     }
@@ -139,6 +141,7 @@ class AuthController extends Controller
             return response()->json([
                 'status' => 'failed',
                 'message' => 'Email already exist',
+                'error'=>'$e'
             ]);
         }
 
