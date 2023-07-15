@@ -16,6 +16,7 @@ export default function Profile() {
     document.addEventListener("mousedown", (event) => {
       if (concernedElement.contains(event.target)) {
         setToggle(true)
+        console.log('in scope')
       } else {
         
         setToggle(false)
@@ -28,7 +29,7 @@ export default function Profile() {
 
 
   return (
-    <div className=' ml-4 flex space-x-4 click-text '>
+    <div className=' ml-4 flex space-x-4 click-text z-10'>
       <div className='w-10'>
         <button >
 

@@ -4,7 +4,8 @@ import Signup from './pages/Signup';
 import Login from './pages/Login';
 import WorkSpaceCreation from './pages/WorkSpaceCreation';
 import Dashboard from './pages/Dashboard';
-import Project from './pages/Project';
+import ProjectInfo from './pages/ProjectInfo';
+import Project from './pages/Projects';
 
 function App() {
   return (
@@ -16,7 +17,8 @@ function App() {
     <Route exact path='/signup' element={<Signup/>}/>
     <Route exact path='/signup/createworkspace' element={<WorkSpaceCreation/>}  />
     <Route exact path='/creator/dashboard' element={<Dashboard/> }/> 
-    <Route exact path='/project' element={<Project/>} /> 
+    <Route exact path='/projectInfo' element={<ProjectInfo/>} /> 
+    <Route exact path='/projects' element={<Project/>} />
 
   </Routes>
   
