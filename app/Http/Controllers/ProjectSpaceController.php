@@ -164,32 +164,6 @@ class ProjectSpaceController extends Controller
      * @param  \App\Models\project_space  $project_space
      * @return \Illuminate\Http\Response
      */
-    // public function update_status(Request $request)
-    // {
-    //     $validator = Validator::make($request->all(), [
-    //         'project_id' => 'required|uuid',
-    //         'project_status' => ['required', 'string', Rule::in(['In-Progress', 'Completed'])],
-    //     ]);
-
-    //     if ($validator->fails()) {
-    //         return response()->json($validator->errors(), 400);
-    //     }
-    //     $updatedRows = project_space
-    //         ::where('id', $request->input('project_id'))
-    //         ->update(['project_status' => $request->input('project_status')]);
-    //     if ($updatedRows > 0) {
-    //         return response()->json([
-    //             'status' => 'success',
-    //             'message' => 'Project status updated successfully',
-    //         ], Response::HTTP_OK);
-    //     } else {
-    //         return response()->json([
-    //             'status' => 'failed',
-    //             'message' => 'No project found with the given ID',
-    //         ], Response::HTTP_NOT_FOUND);
-    //     }
-    // }
-
     public function update_status(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -223,32 +197,6 @@ class ProjectSpaceController extends Controller
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
-
-    // public function update_deadline(Request $request)
-    // {
-    //     $validator = Validator::make($request->all(), [
-    //         'project_id' => 'required|uuid',
-    //         'project_deadline' =>  'required|date',
-    //     ]);
-
-    //     if ($validator->fails()) {
-    //         return response()->json($validator->errors(), 400);
-    //     }
-    //     $updatedRows = project_space
-    //         ::where('id', $request->input('project_id'))
-    //         ->update(['project_deadline' => $request->input('project_deadline')]);
-    //     if ($updatedRows > 0) {
-    //         return response()->json([
-    //             'status' => 'success',
-    //             'message' => 'Project Deadline updated successfully',
-    //         ], Response::HTTP_OK);
-    //     } else {
-    //         return response()->json([
-    //             'status' => 'failed',
-    //             'message' => 'No project found with the given ID',
-    //         ], Response::HTTP_NOT_FOUND);
-    //     }
-    // }
     public function update_deadline(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -362,7 +310,7 @@ class ProjectSpaceController extends Controller
         //         return response()->json(['message' => 'Project not found or deletion failed'], Response::HTTP_NOT_FOUND);
         //     }
         $validator = Validator::make($request->all(), [
-            'project_id' => 'string'
+            'project_id' => 'uuid'
         ]);
 
         if ($validator->fails()) {

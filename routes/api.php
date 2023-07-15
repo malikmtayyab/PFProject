@@ -50,12 +50,9 @@ Route::group(['middleware' => ['api.authentication']], function(){
 
     //ProjectSpaceController
     Route::post('/projectspace', [ProjectSpaceController::class, 'store']);
-
-    //projectmemer
     Route::post('/projectmember', [ProjectMembersController::class, 'store']);
 
     //project task
-
     Route::post('/projecttask', [ProjectTasksController::class, 'store']);
     Route::get('/getWorkSpaceProjects', [UserController::class, 'getUserInitialData']);
     Route::post('/changePassword', [UserController::class, 'changePassword']);
@@ -63,14 +60,30 @@ Route::group(['middleware' => ['api.authentication']], function(){
 
     // Worked when no task and members available
     Route::post('/getProject', [ProjectSpaceController::class, 'getSpecificProjectInfo']);
-
     Route::get('/getWorkspaceMembers', [InvitationTableController::class, 'show']);
 
     Route::post('/changeProject_status', [ProjectSpaceController::class, 'update_status']);
     Route::post('/changeProject_deadline', [ProjectSpaceController::class, 'update_deadline']);
     Route::post('/changeProject_completionDate', [ProjectSpaceController::class, 'update_deadline']);
+    Route::post('/project_completed', [ProjectSpaceController::class, 'add_completion_date']);
+    Route::post('/project_deleted', [ProjectSpaceController::class, 'destroy']);
 
     Route::post('/deleteProjectMember', [ProjectMembersController::class, 'delete']);
+
+    Route::post('/changeTask_status', [ProjectTasksController::class, 'update_status']);
+    Route::post('/changeTask_deadline', [ProjectTasksController::class, 'update_deadline']);
+    Route::post('/changeTask_completionDate', [ProjectTasksController::class, 'update_deadline']);
+    Route::post('/task_completed', [ProjectTasksController::class, 'add_completion_date']);
+    Route::post('/task_deleted', [ProjectTasksController::class, 'destroy']);
+
+
+    Route::post('/addTaskAssignment', [TaskAssignmentController::class, 'store']);
+    Route::post('/seeTaskMembers', [TaskAssignmentController::class, 'show']);
+    Route::post('/deleteTaskMembers', [TaskAssignmentController::class, 'destroy']);
+
+
+
+
 
 });
 
