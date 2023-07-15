@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\project_members;
+use App\Models\project_space;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Http\Response;
@@ -90,10 +92,39 @@ class ProjectMembersController extends Controller
      * @param  \App\Models\project_members  $project_members
      * @return \Illuminate\Http\Response
      */
-    public function show(project_members $project_members)
+    public function show(Request $request)
     {
-        //
+        $validator = Validator::make($request->all(), [
+            'project_id' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'failed',
+                'message' => 'Validation failed.',
+                'errors' => $validator->errors(),
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        $users = User::select('users.name', 'users.email', 'project_spaces.project_name')
+            ->join('project_members', 'users.id', '=', 'project_members.user_id')
+            ->join('project_spaces', 'project_spaces.id', '=', 'project_members.project_id')
+            ->where('project_spaces.id', $request->input('project_id'))
+            ->get();
+
+        if ($users->isEmpty()) {
+            return response()->json([
+                'status' => 'failed',
+                'message' => 'No users found for the given project.',
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $users,
+        ], Response::HTTP_OK);
     }
+
 
     /**
      * Show the form for editing the specified resource.
@@ -124,8 +155,59 @@ class ProjectMembersController extends Controller
      * @param  \App\Models\project_members  $project_members
      * @return \Illuminate\Http\Response
      */
-    public function destroy(project_members $project_members)
+    public function delete(Request $request)
     {
-        //
+        $validator = Validator::make($request->all(), [
+            'project_id' => 'required',
+            'email' => 'required|email',
+        ]);
+
+        // Check if validation fails
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'failed',
+                'message' => 'Validation failed.',
+                'errors' => $validator->errors(),
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        try {
+            $user = User::where('email', $request->input('email'))->first();
+
+            if (!$user) {
+                return response()->json([
+                    'status' => 'failed',
+                    'message' => 'User with the provided email does not exist.',
+                ], Response::HTTP_NOT_FOUND);
+            }
+
+            $projectMembersDeleted = project_members::where('project_id', $request->input('project_id'))
+                ->where('user_id', $user->id)
+                ->delete();
+
+            if ($projectMembersDeleted) {
+                $affectedRows = project_space::join('project_tasks', 'project_spaces.id', '=', 'project_tasks.project_id')
+                    ->join('task_assignments', 'project_tasks.id', '=', 'task_assignments.task_id')
+                    ->where('project_spaces.id', $request->input('project_id'))
+                    ->where('task_assignments.assigned_id', $user->id)
+                    ->delete();
+
+                return response()->json([
+                    'status' => 'success',
+                    'message' => 'Project member deleted successfully.',
+                ], Response::HTTP_OK);
+            } else {
+                return response()->json([
+                    'status' => 'failed',
+                    'message' => 'No project member found with the given project ID and user ID.',
+                ], Response::HTTP_NOT_FOUND);
+            }
+        } catch (QueryException $e) {
+            return response()->json([
+                'status' => 'failed',
+                'message' => 'An error occurred while deleting the project member.',
+                'error' => $e->getMessage(),
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 }

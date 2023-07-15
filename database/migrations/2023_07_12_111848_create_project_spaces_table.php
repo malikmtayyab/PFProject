@@ -21,12 +21,13 @@ return new class extends Migration
             $table->date('project_completion_date')->nullable();
             $table->string('overdue');
             $table->string('project_completion_percentage');
-            $table->string('project_owner');
+            $table->uuid('project_owner');
             $table->date('project_creation_date');
             $table->uuid('workspace_id');
             $table->foreign('workspace_id')->references('id')->on('work_space');
             $table->uuid('lead_id');
             $table->foreign('lead_id')->references('id')->on('users');
+            $table->foreign('project_owner')->references('id')->on('users');
             $table->timestamps();
         });
     }

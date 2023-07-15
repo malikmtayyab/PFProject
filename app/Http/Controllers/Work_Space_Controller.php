@@ -18,7 +18,6 @@ class Work_Space_Controller extends Controller
         $validator = Validator::make($request->all(), [
             'image' => 'required|image',
             'workspace_name' => 'required',
-            'created_by' => 'required',
         ]);
 
         // Check if validation fails
@@ -69,18 +68,5 @@ class Work_Space_Controller extends Controller
             }
     }
     public function show()
-    {
-        // $user = new User;
-
-
-        $items = Work_Space::get();
-        return response()->json([
-            'items' => $items,
-        ]);
-
-        // $items= installment::get();
-        // return response()->json([
-        //     'items' => $items,
-        // ]);
-    }
+    {}
 }

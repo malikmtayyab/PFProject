@@ -10,6 +10,8 @@ use App\Http\Controllers\WorkspaceAdminsController;
 use App\Http\Controllers\ProjectSpaceController;
 use App\Http\Controllers\ProjectMembersController;
 use App\Http\Controllers\ProjectTasksController;
+use App\Http\Controllers\UserController;
+
 
 
 
@@ -35,7 +37,8 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 // Authentication Routes
 Route::post('login', [AuthController::class, 'login']);
 Route::post('register', [AuthController::class, 'register']);
-Route::group(['middleware' => ['api']], function(){
+
+Route::group(['middleware' => ['api.authentication']], function(){
     Route::post('check_authorization', [AuthController::class, 'authorizeJWT_Session']);
     Route::get('verifyCookie',[ApiAuthenticationController::class, 'checkAPICookie']);
     //work_space route
@@ -54,6 +57,21 @@ Route::group(['middleware' => ['api']], function(){
     //project task
 
     Route::post('/projecttask', [ProjectTasksController::class, 'store']);
+    Route::get('/getWorkSpaceProjects', [UserController::class, 'getUserInitialData']);
+    Route::post('/changePassword', [UserController::class, 'changePassword']);
+    Route::post('/addUserName', [UserController::class, 'addUserName']);
+
+    // Worked when no task and members available
+    Route::post('/getProject', [ProjectSpaceController::class, 'getSpecificProjectInfo']);
+
+    Route::get('/getWorkspaceMembers', [InvitationTableController::class, 'show']);
+
+    Route::post('/changeProject_status', [ProjectSpaceController::class, 'update_status']);
+    Route::post('/changeProject_deadline', [ProjectSpaceController::class, 'update_deadline']);
+    Route::post('/changeProject_completionDate', [ProjectSpaceController::class, 'update_deadline']);
+
+    Route::post('/deleteProjectMember', [ProjectMembersController::class, 'delete']);
+
 });
 
 

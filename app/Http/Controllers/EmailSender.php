@@ -31,7 +31,7 @@ class EmailSender
 
             $mail->isHTML(true);
             $mail->Subject = $teamAdditionSubject . " " . $workSpaceName;
-            $mail->Body    = "<h1>You have been added to a new team '" . $workSpaceName . "' by: " . $invitedBy . "</h1>"
+            $mail->Body    = "<h4>You have been added to a new team '" . $workSpaceName . "' by: " . $invitedBy . "</h4>"
                 . "<p>Please log in to see your projects and tasks.</p>";
             $mail->AltBody = " You have been added to a new team '" . $workSpaceName . "' by: " . $invitedBy . "Please log in to see your projects and tasks.";
             $mail->send();
@@ -58,7 +58,7 @@ class EmailSender
 
             $mail->isHTML(true);
             $mail->Subject = $teamAdditionSubject . " " . $workSpaceName . " On LookUp";
-            $mail->Body    = "<h1>You have been added to a new team '" . $workSpaceName . "' by: " . $invitedBy . "</h1>"
+            $mail->Body    = "<h4>You have been added to a new team '" . $workSpaceName . "' by: " . $invitedBy . "</h4>"
                 . "<p>Please log in with the below credentials to complete your account setup and access your projects and tasks:</p></br>"
                 . "<p>Email: " . $email . "</p></br>"
                 . "<p>Password: " . $password . "</p></br>";

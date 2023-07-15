@@ -94,10 +94,16 @@ class ProjectSpaceController extends Controller
             ], Response::HTTP_BAD_REQUEST);
         }
         if ($project_space->save()) {
+            $project = project_space::select('project_spaces.*', 'owner.name AS project_owner_name', 'lead.name AS lead_name')
+    ->join('users AS owner', 'project_spaces.project_owner', '=', 'owner.id')
+    ->join('users AS lead', 'project_spaces.lead_id', '=', 'lead.id')
+    ->where('project_spaces.id', $project_space->id)
+    ->groupBy('project_spaces.id', 'owner.name', 'lead.name')
+    ->get();
             return response()->json([
                 'status' => 'success',
                 'message' => 'Project created',
-                'project_id' => $project_space->id
+                'created_project' => $project
             ], Response::HTTP_OK);
         } else {
             return response()->json([
@@ -106,18 +112,38 @@ class ProjectSpaceController extends Controller
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
-
-
-
     /**
      * Display the specified resource.
      *
      * @param  \App\Models\project_space  $project_space
      * @return \Illuminate\Http\Response
      */
-    public function show(project_space $project_space)
+    public function getSpecificProjectInfo(Request $request)
     {
-        //
+        $validator = Validator::make($request->all(), [
+            'project_id' => 'required|uuid',
+        ]);
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), Response::HTTP_BAD_REQUEST);
+        }
+
+        $project_members = project_space::select('*')
+            ->join('users AS owner', 'project_spaces.project_owner', '=', 'owner.id')
+            ->join('users AS lead', 'project_spaces.lead_id', '=', 'lead.id')
+            ->join('project_members', 'project_spaces.id', '=', 'project_members.project_id')
+            ->join('users', 'project_members.user_id', '=', 'users.id')
+            ->where('project_spaces.id', $request->input('project_id'))
+            ->get();
+
+        $project_tasks = project_space::select('project_tasks.*')
+            ->join('project_tasks', 'project_tasks.project_id','=','project_spaces.id')
+            ->where('project_spaces.id', $request->input('project_id'))
+            ->get();
+
+        return response()->json([
+            'project_members'=>$project_members,
+            'project_tasks' => $project_tasks
+        ]);
     }
 
     /**
@@ -265,31 +291,36 @@ class ProjectSpaceController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json($validator->errors(), 400);
+            return response()->json($validator->errors(), Response::HTTP_BAD_REQUEST);
         }
 
-        try {
-            $updatedRows = project_space::where('id', $request->input('project_id'))
-                ->update(['project_completion_date' => $request->input('completion_date')]);
+        $project = project_space::find($request->input('project_id'));
 
-            if ($updatedRows > 0) {
-                return response()->json([
-                    'status' => 'success',
-                    'message' => 'Project Deadline updated successfully',
-                ], Response::HTTP_OK);
-            } else {
-                return response()->json([
-                    'status' => 'failed',
-                    'message' => 'No project found with the given ID',
-                ], Response::HTTP_NOT_FOUND);
-            }
-        } catch (QueryException $e) {
+        if (!$project) {
             return response()->json([
                 'status' => 'failed',
-                'message' => 'Error occurred while updating the project deadline',
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+                'message' => 'No project found with the given ID',
+            ], Response::HTTP_NOT_FOUND);
         }
+
+        $deadline = Carbon::parse($project->project_deadline);
+        $completionDate = Carbon::parse($request->input('completion_date'));
+
+        if ($completionDate->greaterThan($deadline)) {
+            $project->overdue = true;
+        } else {
+            $project->overdue = false;
+        }
+
+        $project->project_completion_date = $request->input('completion_date');
+        $project->save();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Project Deadline updated successfully',
+        ], Response::HTTP_OK);
     }
+
 
     public function update_overdue(bool $overdue, string $project_id)
     {
