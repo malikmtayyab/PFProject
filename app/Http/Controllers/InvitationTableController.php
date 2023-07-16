@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\invitation_table;
 use Illuminate\Http\Request;
 use App\Models\User;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
 
@@ -59,6 +61,7 @@ class InvitationTableController extends Controller
             return response()->json(['message' => $validator->errors()], 400);
         }
 
+        $cookieValue = $request->input('userID');
         // Get the token from the request.
         // $extracted_token = Access_Token_Extractor::tokenExtractor($request->input('access_token'));
         // $sessionValue = Access_Token_Extractor::getSessionValue('jwt_session');
@@ -73,19 +76,18 @@ class InvitationTableController extends Controller
             $finding_user = User::where('email', $request->input('email'))->first();
             $workspace = DB::table('work_space')
                 ->join('workspace_admins', 'work_space.id', '=', 'workspace_admins.workspace_id')
-                ->where('workspace_admins.user_id', $request->cookie('LogIn_Session')) // Replace 'John Doe' with the desired admin name
+                ->where('workspace_admins.user_id', $request->input('userID')) // Replace 'John Doe' with the desired admin name
                 ->select('work_space.workspace_name')
                 ->get();
             $invitedByID = DB::table('users')
-                ->where('id', $request->cookie('LogIn_Session'))
+                ->where('id', $request->input('userID'))
                 ->first(['email']);
             // return([$invitedByID, $workspace, $finding_user]);
             if ($finding_user) {
                 $invitation_table = new invitation_table;
                 $invitation_table->id = $finding_user->id;
-                $invitation_table->invited_by = $request->cookie('LogIn_Session');
+                $invitation_table->invited_by = $request->input('userID');
                 if ($invitation_table->save()) {
-
                     $emailSent = EmailSender::sendEmail(
                         $finding_user->email,
                         $invitedByID->email,
@@ -108,12 +110,16 @@ class InvitationTableController extends Controller
                 if ($user->save()) {
                     $invitation_table = new invitation_table;
                     $invitation_table->id = $user->id;
-                    $invitation_table->invited_by = $request->cookie('LogIn_Session');
+                    $invitation_table->invited_by = $request->input('userID');
 
                     if ($invitation_table->save()) {
                         // Send welcome email to the user
                         // Email will be added in this section
-
+                        $members = Redis::get($cookieValue."@WorkspaceMembers");
+                        $decoded_members = json_decode($members);
+                        array_push($decoded_members, $user);
+                        $encoded_members = json_encode($members);
+                        $members = Redis::set($cookieValue."@WorkspaceMembers", $encoded_members);
                         EmailSender::sendEmailToRegister(
                             $user->email,
                             $password,
@@ -168,7 +174,15 @@ class InvitationTableController extends Controller
     public function show(Request $request)
     {
 
-        $cookieValue = $request->cookie('LogIn_Session');
+        $cookieValue = $request->input('userID');
+        $members = Redis::get($cookieValue."@WorkspaceMembers");
+        if($members){
+            return response()->json([
+                'status' => 'success',
+               "project_members" => $members
+            ], Response::HTTP_OK);
+        }
+
         $members =  invitation_table::select(
             'users.name as admin_name',
             'users.email as admin_email',
@@ -185,7 +199,7 @@ class InvitationTableController extends Controller
             ->where('workspace_admins.user_id', $cookieValue)
             ->get();
 
-            if($members){
+            if(!$members){
                 return response()->json([
                     'status'=> 'failed',
                     "project_members" => $members

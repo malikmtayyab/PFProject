@@ -9,9 +9,12 @@ use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+
+use function PHPUnit\Framework\isEmpty;
 
 class ProjectTasksController extends Controller
 {
@@ -105,9 +108,46 @@ class ProjectTasksController extends Controller
      * @param  \App\Models\project_tasks  $project_tasks
      * @return \Illuminate\Http\Response
      */
-    public function show(project_tasks $project_tasks)
+    public function show(Request $request)
     {
-        //
+        $validator = Validator::make($request->all(), [
+            'project_id' => 'required|uuid',
+        ]);
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 400);
+        }
+        $cache_Tasks = Redis::get($request->input('userID') . "@WorkspaceProjectsTasks");
+        if ($cache_Tasks) {
+            $tasks = json_decode($cache_Tasks);
+            if ($tasks[$request->input("project_id")]) {
+                return response()->json([
+                    'project_tasks' => $tasks[$request->input("project_id")]
+                ]);
+            }
+        } else {
+            $cache_Tasks = Redis::get($request->input('userID') . "@MemberProjectsTasks");
+            if ($cache_Tasks) {
+                $tasks = json_decode($cache_Tasks);
+                if ($tasks[$request->input("project_id")]) {
+                    return response()->json([
+                        'project_tasks' => $tasks[$request->input("project_id")]
+                    ]);
+                }
+            }
+        }
+        $projectTasks = project_tasks::where('project_id', $request->input('project_id'))->get();
+        if ($projectTasks . isEmpty()) {
+            return response()->json([
+                'status' => 'failed',
+                'message' => 'No task found with the given ID',
+                'tasks' => null
+            ], Response::HTTP_NOT_FOUND);
+        }
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Tasks found with the given ID',
+            'tasks' => $projectTasks
+        ], Response::HTTP_OK);
     }
 
     /**
@@ -145,6 +185,41 @@ class ProjectTasksController extends Controller
                 ->update(['task_status' => $request->input('task_status')]);
 
             if ($updatedRows > 0) {
+
+                $cache_Tasks = Redis::get($request->input('userID') . "@WorkspaceProjectsTasks");
+                if ($cache_Tasks) {
+                    $flag = false;
+                    $projectTasks = json_decode($cache_Tasks);
+                    foreach ($projectTasks as $projectId => $tasks) {
+                        foreach ($tasks as $task) {
+                            if ($task->id === $request->input("task_id")) {
+                                $task->task_status = $request->input("task_status");
+                                Redis::set($request->input('userID') . "@WorkspaceProjectsTasks", $projectTasks);
+                                $flag = true;
+                                break;
+                            }
+                        }
+                        if ($flag) break;
+                    }
+                } else {
+                    $cache_Tasks = Redis::get($request->input('userID') . "@MemberProjectsTasks");
+                    if ($cache_Tasks) {
+                        $flag = false;
+                        $projectTasks = json_decode($cache_Tasks);
+                        foreach ($projectTasks as $projectId => $tasks) {
+                            foreach ($tasks as $task) {
+                                if ($task->id === $request->input("task_id")) {
+                                    $task->task_status = $request->input("task_status");
+                                    Redis::set($request->input('userID') . "@WorkspaceProjectsTasks", $projectTasks);
+                                    $flag = true;
+                                    break;
+                                }
+                            }
+                            if ($flag) break;
+                        }
+                    }
+                }
+
                 return response()->json([
                     'status' => 'success',
                     'message' => 'Project status updated successfully',
@@ -152,7 +227,7 @@ class ProjectTasksController extends Controller
             } else {
                 return response()->json([
                     'status' => 'failed',
-                    'message' => 'No project found with the given ID',
+                    'message' => 'No task found with the given ID',
                 ], Response::HTTP_NOT_FOUND);
             }
         } catch (QueryException $e) {
@@ -178,6 +253,39 @@ class ProjectTasksController extends Controller
             $updatedRows = project_tasks::where('id', $request->input('task_id'))
                 ->update(['task_deadline' => $request->input('task_deadline')]);
 
+            $cache_Tasks = Redis::get($request->input('userID') . "@WorkspaceProjectsTasks");
+            if ($cache_Tasks) {
+                $flag = false;
+                $projectTasks = json_decode($cache_Tasks);
+                foreach ($projectTasks as $projectId => $tasks) {
+                    foreach ($tasks as $task) {
+                        if ($task->id === $request->input("task_id")) {
+                            $task->task_deadline = $request->input("task_deadline");
+                            Redis::set($request->input('userID') . "@WorkspaceProjectsTasks", $projectTasks);
+                            $flag = true;
+                            break;
+                        }
+                    }
+                    if ($flag) break;
+                }
+            } else {
+                $cache_Tasks = Redis::get($request->input('userID') . "@MemberProjectsTasks");
+                if ($cache_Tasks) {
+                    $flag = false;
+                    $projectTasks = json_decode($cache_Tasks);
+                    foreach ($projectTasks as $projectId => $tasks) {
+                        foreach ($tasks as $task) {
+                            if ($task->id === $request->input("task_id")) {
+                                $task->task_deadline = $request->input("task_deadline");
+                                Redis::set($request->input('userID') . "@WorkspaceProjectsTasks", $projectTasks);
+                                $flag = true;
+                                break;
+                            }
+                        }
+                        if ($flag) break;
+                    }
+                }
+            }
             if ($updatedRows > 0) {
                 return response()->json([
                     'status' => 'success',
@@ -208,28 +316,27 @@ class ProjectTasksController extends Controller
             return response()->json($validator->errors(), Response::HTTP_BAD_REQUEST);
         }
 
-        $tasks = project_tasks::find($request->input('task_id'));
+        $specific_task = project_tasks::find($request->input('task_id'));
 
-        if (!$tasks) {
+        if (!$specific_task) {
             return response()->json([
                 'status' => 'failed',
                 'message' => 'No Task found with the given ID',
             ], Response::HTTP_NOT_FOUND);
         }
 
-        $deadline = Carbon::parse($tasks->task_deadline);
+        $deadline = Carbon::parse($specific_task->task_deadline);
         $completionDate = Carbon::parse($request->input('completion_date'));
 
         if ($completionDate->greaterThan($deadline)) {
-            $tasks->overdue = true;
+            $specific_task->overdue = true;
         } else {
-            $tasks->overdue = false;
+            $specific_task->overdue = false;
         }
 
-        $tasks->project_completion_date = $request->input('completion_date');
-
+        $specific_task->project_completion_date = $request->input('completion_date');
         $taskCounts = project_tasks::select('task_status', DB::raw('COUNT(*) as count'))
-            ->where('project_id', $tasks->project_id)
+            ->where('project_id', $specific_task->project_id)
             ->groupBy('task_status')
             ->get();
         $inProgress = 0;
@@ -245,13 +352,48 @@ class ProjectTasksController extends Controller
 
         $totalTasks = $inProgress + $completed;
         $finalPercentage = $totalTasks > 0 ? ($inProgress / $totalTasks) * 100 : 0;
-        $updatedRows = project_space::where('id', $tasks->project_id)
+        $updatedRows = project_space::where('id', $specific_task->project_id)
             ->update(['project_completion_percentage' => $finalPercentage]);
-        $tasks->save();
+        $specific_task->save();
 
+        $cache_Tasks = Redis::get($request->input('userID') . "@WorkspaceProjectsTasks");
+        if ($cache_Tasks) {
+            $flag = false;
+            $projectTasks = json_decode($cache_Tasks);
+            foreach ($projectTasks as $projectId => $tasks) {
+                foreach ($tasks as $task) {
+                    if ($task->id === $request->input("task_id")) {
+                        $task->task_completion_date = $request->input("completion_date");
+                        $task->task_overdue = $specific_task->overdue;
+                        Redis::set($request->input('userID') . "@WorkspaceProjectsTasks", $projectTasks);
+                        $flag = true;
+                        break;
+                    }
+                }
+                if ($flag) break;
+            }
+        } else {
+            $cache_Tasks = Redis::get($request->input('userID') . "@MemberProjectsTasks");
+            if ($cache_Tasks) {
+                $flag = false;
+                $projectTasks = json_decode($cache_Tasks);
+                foreach ($projectTasks as $projectId => $tasks) {
+                    foreach ($tasks as $task) {
+                        if ($task->id === $request->input("task_id")) {
+                            $task->task_completion_date = $request->input("completion_date");
+                            $task->task_overdue = $specific_task->overdue;
+                            Redis::set($request->input('userID') . "@WorkspaceProjectsTasks", $projectTasks);
+                            $flag = true;
+                            break;
+                        }
+                    }
+                    if ($flag) break;
+                }
+            }
+        }
         return response()->json([
             'status' => 'success',
-            'message' => 'Project Deadline updated successfully',
+            'message' => 'Task Deadline updated successfully',
         ], Response::HTTP_OK);
     }
 
@@ -276,14 +418,14 @@ class ProjectTasksController extends Controller
 
             if ($deletedRows > 0) {
                 // Project deleted successfully
-                return response()->json(['message' => 'Project deleted successfully'], Response::HTTP_OK);
+                return response()->json(['message' => 'Task deleted successfully'], Response::HTTP_OK);
             } else {
                 // Project not found or deletion failed
-                return response()->json(['message' => 'Project not found or deletion failed'], Response::HTTP_NOT_FOUND);
+                return response()->json(['message' => 'Task not found or deletion failed'], Response::HTTP_NOT_FOUND);
             }
         } catch (QueryException $e) {
             // Exception occurred during database operation
-            return response()->json(['message' => 'Error occurred while deleting the project'], Response::HTTP_INTERNAL_SERVER_ERROR);
+            return response()->json(['message' => 'Error occurred while deleting the Task'], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 }

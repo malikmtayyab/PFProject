@@ -7,6 +7,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -53,7 +54,7 @@ class ProjectSpaceController extends Controller
             return response()->json($validator->errors(), 400);
         }
 
-        $cookie_value = $request->cookie("LogIn_Session");
+        $cookie_value = $request->input('userID');;
         $project_space = new project_space;
         $project_space->id = Str::uuid()->toString();
         $project_space->project_name = $request->input('projectname');
@@ -95,11 +96,11 @@ class ProjectSpaceController extends Controller
         }
         if ($project_space->save()) {
             $project = project_space::select('project_spaces.*', 'owner.name AS project_owner_name', 'lead.name AS lead_name')
-    ->join('users AS owner', 'project_spaces.project_owner', '=', 'owner.id')
-    ->join('users AS lead', 'project_spaces.lead_id', '=', 'lead.id')
-    ->where('project_spaces.id', $project_space->id)
-    ->groupBy('project_spaces.id', 'owner.name', 'lead.name')
-    ->get();
+                ->join('users AS owner', 'project_spaces.project_owner', '=', 'owner.id')
+                ->join('users AS lead', 'project_spaces.lead_id', '=', 'lead.id')
+                ->where('project_spaces.id', $project_space->id)
+                ->groupBy('project_spaces.id', 'owner.name', 'lead.name')
+                ->get();
             return response()->json([
                 'status' => 'success',
                 'message' => 'Project created',
@@ -127,6 +128,38 @@ class ProjectSpaceController extends Controller
             return response()->json($validator->errors(), Response::HTTP_BAD_REQUEST);
         }
 
+        $cache_projects = Redis::get($request->input('userID') . "@WorkspaceProjects");
+
+        if ($cache_projects) {
+
+            $projects = json_decode($cache_projects);
+            foreach ($projects as $project) {
+                if ($project->id === $request->input('project_id')) {
+                    $project_tasks = json_decode(Redis::get($request->input('userID') . "@WorkspaceProjectsTasks"));
+                    $project_members = json_decode(Redis::get($request->input('userID') . "@WorkspaceProjectsMembers"));
+                    return [$project_tasks, $project_members];
+                    return response()->json([
+                        'project_members' => $project_members[$project->id] ?? null,
+                        'project_tasks' => $project_tasks[$project->id] ?? null
+                    ]);
+                }
+            }
+        } else {
+            $cache_projects = Redis::get($request->input('userID') . "@MemberProjects");
+            if ($cache_projects) {
+                $projects = json_decode($cache_projects);
+                foreach ($projects as $project) {
+                    if ($project->id === $request->input('project_id')) {
+                        $project_tasks = json_decode(Redis::get($request->input('userID') . "@MemberProjectsTasks"));
+                        $project_members = json_decode(Redis::get($request->input('userID') . "@MemberProjectsMembers"));
+                        return response()->json([
+                            'project_members' => $project_members[$project->id],
+                            'project_tasks' => $project_tasks[$project->id]
+                        ]);
+                    }
+                }
+            }
+        }
         $project_members = project_space::select('*')
             ->join('users AS owner', 'project_spaces.project_owner', '=', 'owner.id')
             ->join('users AS lead', 'project_spaces.lead_id', '=', 'lead.id')
@@ -136,12 +169,12 @@ class ProjectSpaceController extends Controller
             ->get();
 
         $project_tasks = project_space::select('project_tasks.*')
-            ->join('project_tasks', 'project_tasks.project_id','=','project_spaces.id')
+            ->join('project_tasks', 'project_tasks.project_id', '=', 'project_spaces.id')
             ->where('project_spaces.id', $request->input('project_id'))
             ->get();
 
         return response()->json([
-            'project_members'=>$project_members,
+            'project_members' => $project_members,
             'project_tasks' => $project_tasks
         ]);
     }
@@ -176,10 +209,36 @@ class ProjectSpaceController extends Controller
         }
 
         try {
+
             $updatedRows = project_space::where('id', $request->input('project_id'))
                 ->update(['project_status' => $request->input('project_status')]);
 
             if ($updatedRows > 0) {
+                $cache_projects = Redis::get($request->input('userID') . "@WorkspaceProjects");
+
+                if ($cache_projects) {
+
+                    $projects = json_decode($cache_projects);
+                    foreach ($projects as $project) {
+                        if ($project->id === $request->input('project_id')) {
+                            $project->project_status = $request->input("project_status");
+                            break;
+                        }
+                    }
+                    Redis::set($request->input('userID') . "@WorkspaceProjects", $projects);
+                } else {
+                    $cache_projects = Redis::get($request->input('userID') . "@MemberProjects");
+                    if ($cache_projects) {
+                        $projects = json_decode($cache_projects);
+                        foreach ($projects as $project) {
+                            if ($project->id === $request->input('project_id')) {
+                                $project->project_status = $request->input("project_status");
+                                break;
+                            }
+                        }
+                        Redis::set($request->input('userID') . "@WorkspaceProjects", $projects);
+                    }
+                }
                 return response()->json([
                     'status' => 'success',
                     'message' => 'Project status updated successfully',
@@ -207,12 +266,34 @@ class ProjectSpaceController extends Controller
         if ($validator->fails()) {
             return response()->json($validator->errors(), 400);
         }
-
         try {
             $updatedRows = project_space::where('id', $request->input('project_id'))
                 ->update(['project_deadline' => $request->input('project_deadline')]);
 
             if ($updatedRows > 0) {
+                $cache_projects = Redis::get($request->input('userID') . "@WorkspaceProjects");
+                if ($cache_projects) {
+                    $projects = json_decode($cache_projects);
+                    foreach ($projects as $project) {
+                        if ($project->id === $request->input('project_id')) {
+                            $project->project_deadline = $request->input("project_deadline");
+                            break;
+                        }
+                    }
+                    Redis::set($request->input('userID') . "@WorkspaceProjects", $projects);
+                } else {
+                    $cache_projects = Redis::get($request->input('userID') . "@MemberProjects");
+                    if ($cache_projects) {
+                        $projects = json_decode($cache_projects);
+                        foreach ($projects as $project) {
+                            if ($project->id === $request->input('project_id')) {
+                                $project->project_deadline = $request->input("project_deadline");
+                                break;
+                            }
+                        }
+                        Redis::set($request->input('userID') . "@WorkspaceProjects", $projects);
+                    }
+                }
                 return response()->json([
                     'status' => 'success',
                     'message' => 'Project Deadline updated successfully',
@@ -262,6 +343,32 @@ class ProjectSpaceController extends Controller
 
         $project->project_completion_date = $request->input('completion_date');
         $project->save();
+
+        $cache_projects = Redis::get($request->input('userID') . "@WorkspaceProjects");
+
+        if ($cache_projects) {
+
+            $projects = json_decode($cache_projects);
+            foreach ($projects as $project) {
+                if ($project->id === $request->input('project_id')) {
+                    $project->project_completion_date = $request->input("completion_date");
+                    break;
+                }
+            }
+            Redis::set($request->input('userID') . "@WorkspaceProjects", $projects);
+        } else {
+            $cache_projects = Redis::get($request->input('userID') . "@MemberProjects");
+            if ($cache_projects) {
+                $projects = json_decode($cache_projects);
+                foreach ($projects as $project) {
+                    if ($project->id === $request->input('project_id')) {
+                        $project->project_completion_date = $request->input("completion_date");
+                        break;
+                    }
+                }
+                Redis::set($request->input('userID') . "@WorkspaceProjects", $projects);
+            }
+        }
 
         return response()->json([
             'status' => 'success',

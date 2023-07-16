@@ -15,6 +15,7 @@ use App\Models\work_space;
 use Illuminate\Support\Facades\Hash;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Tymon\JWTAuth\Facades\JWTFactory;
+use Illuminate\Support\Facades\Redis;
 
 
 
@@ -31,7 +32,7 @@ class AuthController extends Controller
      */
     public function __construct()
     {
-        // $this->middleware('auth:api', ['except' => ['login','register']]);
+        $this->middleware('auth:api', ['except' => ['login', 'register']]);
     }
 
     /**
@@ -66,42 +67,51 @@ class AuthController extends Controller
 
             $user = auth()->user();
 
-            // Check if user ID exists in Work_Space table
-            $workspace = workspace_admins::where('id', $user->id)->first();
-            $workspace_member = invitation_table::where('id', $user->id)->first();
-            //Creating Session
-            $session = session();
-            $session->put("login_session", $user->id);
-            $session->save();
 
-            // $payload = JWTFactory::sub($user->id)->expiresAfter(now()->addDays(1))->make();
-            // $token = JWTAuth::encode($payload)->get();
+            // $cookieValue = $request->input('userID');
+            $results = work_space::select('work_space.id as workspace_id', 'work_space.workspace_name', 'workspace_admins.user_id as admin_id', 'invitation_tables.id as member_id')
+                ->join('workspace_admins', 'work_space.id', '=', 'workspace_admins.workspace_id')
+                ->leftJoin('invitation_tables', 'invitation_tables.invited_by', '=', 'workspace_admins.user_id')
+                ->where('workspace_admins.user_id', $user->id)
+                ->orWhere('invitation_tables.id', $user->id)
+                ->first();
+
+            // $workspaceName = $results->workspace_name;
+            // $workspaceId = $results->workspace_id;
+            // $adminId = $results->admin_id;
+            // $memberId = $results->member_id;
+
+            $iv = str_repeat("0", openssl_cipher_iv_length("AES-256-CBC"));
+            $encryptedID = openssl_encrypt($user->id, "AES-256-CBC", env("AES_SECRET_ACCESS_KEY"), 0, $iv);
+            Redis::set($encryptedID . "@access_token", $token);
 
 
-            if ($workspace || $workspace_member) {
+            if ($results->workspace_id) {
                 return response()->json([
                     'status' => 'success',
                     'message' => 'Login successful',
                     'token' => $token,
                     'workspace' => 'true',
-                    'user_name'=>$user->name,
-                    'session' => $session->get('login_session')
-                ])->cookie("LogIn_Session", $session->get("login_session"), 60);
+                    'user_name' => $user->name,
+                    'user_id' => $encryptedID,
+                    'workspace_info' => $results
+                ]);
             } else {
                 return response()->json([
                     'status' => 'success',
                     'message' => 'Login successful',
                     'token' => $token,
                     'workspace' => 'false',
-                    'user_name'=>$user->name,
-                    'session' => $session->get('login_session')
-                ])->cookie("LogIn_Session", $session->get("login_session"), 60);
+                    'user_name' => $user->name,
+                    'user_id' => $encryptedID,
+                    'workspace_info' => $results
+                ]);
             }
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'failed',
                 'message' => 'Internal server error',
-                'error'=>$e
+                'error' => $e
             ]);
         }
     }
@@ -141,10 +151,9 @@ class AuthController extends Controller
             return response()->json([
                 'status' => 'failed',
                 'message' => 'Email already exist',
-                'error'=>'$e'
+                'error' => '$e'
             ]);
         }
-
     }
 
 

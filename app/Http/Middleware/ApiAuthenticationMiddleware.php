@@ -5,6 +5,9 @@ namespace App\Http\Middleware;
 use App\Http\Controllers\Access_Token_Extractor;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Redis;
+
 
 class ApiAuthenticationMiddleware
 {
@@ -17,24 +20,22 @@ class ApiAuthenticationMiddleware
      */
     public function handle(Request $request, Closure $next)
 {
-    $cookieName = 'LogIn_Session'; // Specify the name of the cookie you want to check
+    $token = $request->header('Authorization');
+    $parts = explode(' ', $token);
+    $token = Redis::get($parts[1]."@access_token");
 
-    if ($request->hasCookie($cookieName)) {
-        $cookieValue = $request->cookie($cookieName);
-        $sessionValue = Access_Token_Extractor::getSessionValue('login_session');
+    if ($token===$parts[2]) {
+        $iv = str_repeat("0", openssl_cipher_iv_length("AES-256-CBC"));
+        $decryptedID = openssl_decrypt($parts[1], "AES-256-CBC", env("AES_SECRET_ACCESS_KEY"), 0, $iv);
+        $request->merge(['userID' => $decryptedID]);
+        // Proceed to the next middleware or the requested URI
+        return $next($request);
 
-        // Check if the cookie value matches the session value
-        if ($cookieValue === $sessionValue) {
-            // Proceed to the next middleware or the requested URI
-            return $next($request);
-        }
     }
-    // If the cookie is not found or the values don't match, return a specific response
-    Access_Token_Extractor::destroySession();
     return response()->json([
         'status' => 'failed',
-        'message' => 'Invalid Cookies or No Session Found',
-    ])->cookie($cookieName, null, -1);
+        'message' => 'Invalid Credentials',
+    ], Response::HTTP_BAD_REQUEST);
 }
 
 }

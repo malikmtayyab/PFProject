@@ -57,8 +57,7 @@ class WorkspaceAdminsController extends Controller
         }
 
         // Retrieve the cookie value and session value
-            $cookie_value = $request->cookie("LogIn_Session");
-
+            $cookie_value = $request->input('userID');
             $workspace_admin = new workspace_admins;
 
             // Find the user by email
@@ -131,7 +130,7 @@ class WorkspaceAdminsController extends Controller
      */
     public function delete(Request $request)
     {
-        
+
 
     }
 }
